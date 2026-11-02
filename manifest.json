@@ -1,9 +1,14 @@
 {
+  "id": "https://2647805640max-lab.github.io/finhub/",
   "name": "FinHub 投资驾驶舱",
   "short_name": "FinHub",
+  "description": "行情 / 三因子 / 持仓 / 告警 / 新闻 / 链式推演",
+  "lang": "zh-CN",
+  "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0a0e14",
   "theme_color": "#0a0e14",
   "orientation": "portrait",
@@ -21,7 +26,7 @@
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

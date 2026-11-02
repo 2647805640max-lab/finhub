@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-02 23:43:48",
+    "generatedAt":  "2026-11-02 23:49:48",
     "generatedBy":  "E:\\investment-os\\tools\\export-board.ps1",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1645,6 +1645,75 @@
                                 ],
                       "count":  3
                   },
+    "today":  {
+                  "date":  "2026-11-02",
+                  "position":  {
+                                   "currentPct":  35.02,
+                                   "authorityPct":  35.92,
+                                   "hardMaxPct":  15,
+                                   "totalWealthCny":  89177.88,
+                                   "reduceDerived":  17598.09,
+                                   "reduceAuthority":  18656,
+                                   "dataAsOf":  "2026-10-12",
+                                   "dataAgeDays":  21.1,
+                                   "stale":  true,
+                                   "note":  "仓位为 10-29/30 派生重算；持仓快照过期时它是推算值，不是实时真值"
+                               },
+                  "rebalance":  {
+                                    "bandLowPct":  8,
+                                    "bandHighPct":  15,
+                                    "inBand":  false,
+                                    "action":  "TRIM"
+                                },
+                  "pending":  [
+                                  {
+                                      "what":  "**T-3**",
+                                      "why":  "**待批（已全量核实）**",
+                                      "owner":  "user"
+                                  },
+                                  {
+                                      "what":  "**T-4**",
+                                      "why":  "**待批**",
+                                      "owner":  "user"
+                                  },
+                                  {
+                                      "what":  "**T-7**",
+                                      "why":  "**待批**",
+                                      "owner":  "user"
+                                  },
+                                  {
+                                      "what":  "G1 根目录收敛",
+                                      "why":  "0%（方案就绪，待批）",
+                                      "owner":  "user"
+                                  },
+                                  {
+                                      "what":  "G2 去冗余",
+                                      "why":  "20%（R0 已清 154 空目录；R1 可回收量已重算为 73.2MB；待批）",
+                                      "owner":  "user"
+                                  }
+                              ],
+                  "pendingCnt":  5,
+                  "freshness":  [
+                                    {
+                                        "item":  "持仓快照 holdings.json",
+                                        "asOf":  "2026-10-12",
+                                        "ageDays":  21.1,
+                                        "stale":  true
+                                    },
+                                    {
+                                        "item":  "引擎政策契约",
+                                        "asOf":  "2026-11-02 22:58:24",
+                                        "ageDays":  null,
+                                        "stale":  false
+                                    },
+                                    {
+                                        "item":  "决策账本",
+                                        "asOf":  "2026-11-02 23:49",
+                                        "ageDays":  0,
+                                        "stale":  false
+                                    }
+                                ]
+              },
     "_missing":  [
 
                  ]

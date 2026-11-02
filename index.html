@@ -139,6 +139,11 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
 #toast.on{opacity:1}
 
+.govnav{display:flex;gap:6px;overflow-x:auto;padding:0 4px 10px;-webkit-overflow-scrolling:touch}
+.govnav::-webkit-scrollbar{display:none}
+.gov{flex:0 0 auto;font-size:12px;padding:5px 11px;border-radius:999px;background:var(--card);
+  border:1px solid var(--line);color:var(--dim);text-decoration:none;white-space:nowrap}
+.gov:active,.gov:focus{background:var(--acc);border-color:var(--acc);color:#04101f}
 </style>
 </head>
 <body>
@@ -147,6 +152,12 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <div class="brand">Fin<span>Hub</span></div>
     <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
   </header>
+  <div class="govnav">
+    <a class="gov" href="board.html#ips">IPS 五项</a>
+    <a class="gov" href="board.html#factor">因子登记</a>
+    <a class="gov" href="board.html#news">新闻映射</a>
+    <a class="gov" href="board.html#chain">推演规则</a>
+  </div>
   <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
 </div>
 <script>

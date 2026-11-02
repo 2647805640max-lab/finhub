@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-02 23:25:53",
+    "generatedAt":  "2026-11-02 23:28:16",
     "generatedBy":  "E:\\investment-os\\tools\\export-board.ps1",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1080,6 +1080,13 @@
                                          "detail":  "11 个预测因子的 invalidation 只能写「口径变更 / 有效观测跌破 20 / 源停更」这类可判定的数据与口径条件。它们的「经济机制何时失效」（如实际利率传导链断裂）没有预注册的量化阈值，本表不得编造。",
                                          "whatToUseInstead":  "机制层面的失效需另做前向检验并预注册阈值；在此之前只保留数据/口径型失效条件。",
                                          "source":  "factor-correlation.ps1:64-66（MinObs 阈值与剔除纪律）；IPS.md:284-293（链式推演可证伪性要求）"
+                                     },
+                                     {
+                                         "id":  "U11",
+                                         "topic":  "因果口径 6 个因子的 hedge 值是按桶继承的推论，不是源码字段",
+                                         "detail":  "源码 economic_exposure().groups（dyn_sim.py:381-388）只有 6 个组名与桶列表，没有 hedge 字段。hedge 属性只存在于第一套口径的 BUCKETS（dyn_sim.py:105-114）。故 6 个因果因子的 hedge 值是按其成员桶的 hedge 继承而来，已在每个因果因子的 hedgeSource 字段显式标注为 inferred-by-bucket-inheritance。",
+                                         "whatToUseInstead":  "引用因果因子的 hedge 前必须先看 hedgeSource 字段；该值不可当作源码直读，只能作为待确认的推论。",
+                                         "source":  "dyn_sim.py:381-388（groups 块无 hedge 字段）；dyn_sim.py:105-114（BUCKETS 有 hedge 字段）"
                                      }
                                  ]
                 },
@@ -1173,9 +1180,11 @@
                                     "eventType":  "原油与能源价格变动",
                                     "frequency":  "实测 29 条 / 共 687 条（去重后）",
                                     "affectedFactors":  [
-                                                            "F1_OIL",
-                                                            "XAU",
-                                                            "US10Y"
+                                                            "predictive/F1_OIL",
+                                                            "predictive/XAU",
+                                                            "predictive/US10Y",
+                                                            "exposure/commodity",
+                                                            "exposure-causal/inflation_commodity"
                                                         ],
                                     "assetImpact":  [
                                                         {
@@ -1213,9 +1222,12 @@
                                     "eventType":  "地缘冲突与战争风险",
                                     "frequency":  "实测 11 条 / 共 687 条（去重后）",
                                     "affectedFactors":  [
-                                                            "F1_OIL",
-                                                            "XAU",
-                                                            "US10Y"
+                                                            "predictive/F1_OIL",
+                                                            "predictive/XAU",
+                                                            "predictive/US10Y",
+                                                            "exposure/commodity",
+                                                            "exposure-causal/inflation_commodity",
+                                                            "exposure/growth_risk"
                                                         ],
                                     "assetImpact":  [
                                                         {
@@ -1253,10 +1265,12 @@
                                     "eventType":  "财报/业绩与业绩指引",
                                     "frequency":  "实测 65 条 / 共 687 条（去重后）",
                                     "affectedFactors":  [
-                                                            "HS300",
-                                                            "CYB",
-                                                            "SZCOMP",
-                                                            "XAU"
+                                                            "predictive/HS300",
+                                                            "predictive/CYB",
+                                                            "predictive/SZCOMP",
+                                                            "predictive/XAU",
+                                                            "exposure/growth_risk",
+                                                            "exposure/broad"
                                                         ],
                                     "assetImpact":  [
                                                         {
@@ -1287,10 +1301,12 @@
                                     "eventType":  "A股板块/概念异动与公司行动",
                                     "frequency":  "实测 21 条 / 共 687 条（去重后）",
                                     "affectedFactors":  [
-                                                            "HS300",
-                                                            "SZZ",
-                                                            "SZCOMP",
-                                                            "CYB"
+                                                            "predictive/HS300",
+                                                            "predictive/SZZ",
+                                                            "predictive/SZCOMP",
+                                                            "predictive/CYB",
+                                                            "exposure/broad",
+                                                            "exposure/broad_dividend"
                                                         ],
                                     "assetImpact":  [
                                                         {

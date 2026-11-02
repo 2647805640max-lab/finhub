@@ -41,6 +41,15 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 footer{position:fixed;bottom:0;left:0;right:0;background:#070b11;border-top:1px solid var(--line);
 padding:8px 16px;font-size:11px;color:var(--dim);display:flex;gap:10px;justify-content:space-between}
 button.reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;font-size:11px}
+@media (max-width:560px){
+  table,thead,tbody,tr,td,th{display:block;width:auto}
+  thead{display:none}
+  tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#0d141e}
+  td{border:0;padding:3px 0}
+  td.num{text-align:left}
+  td:first-child{font-size:13px}
+  .kv{grid-template-columns:88px 1fr}
+}
 </style>
 </head>
 <body>

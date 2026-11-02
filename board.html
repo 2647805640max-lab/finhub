@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<title>治理看板 · IPS / 因子 / 新闻 / 推演</title>
+<style>
+:root{--bg:#0a0e14;--card:#111823;--line:#1e2a3a;--txt:#d8e2ef;--dim:#6b7f96;
+--ok:#3ddc97;--warn:#ffb340;--bad:#ff5c5c;--acc:#4da3ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
+header{position:sticky;top:0;z-index:9;background:linear-gradient(180deg,#0a0e14 70%,rgba(10,14,20,0));padding:14px 16px 18px}
+h1{font-size:17px;margin:0;display:flex;align-items:center;gap:8px}
+h1 small{font-weight:400;color:var(--dim);font-size:11px}
+.meta{color:var(--dim);font-size:11px;margin-top:4px}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 0;-webkit-overflow-scrolling:touch}
+nav button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
+padding:6px 12px;border-radius:999px;font-size:12px;cursor:pointer}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#04101f;font-weight:600}
+main{padding:14px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.card h2 .tag{font-size:10px;padding:2px 7px;border-radius:999px;background:#0b1220;color:var(--dim);border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:500;font-size:11px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.dim{color:var(--dim)}
+.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--dim);margin-right:4px}
+.pill.ok{color:var(--ok);border-color:#1d4b3a}.pill.warn{color:var(--warn);border-color:#4b3d1d}.pill.bad{color:var(--bad);border-color:#4b1d1d}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:12.5px}
+.kv div:nth-child(odd){color:var(--dim)}
+.hops{border-left:2px solid var(--line);margin-left:6px;padding-left:12px}
+.hop{margin-bottom:10px;position:relative}
+.hop::before{content:"";position:absolute;left:-17px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+.hop b{font-size:12.5px}
+.bar{height:6px;background:#0b1220;border-radius:3px;overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;background:var(--acc)}
+.err{color:var(--bad);font-size:12px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#070b11;border-top:1px solid var(--line);
+padding:8px 16px;font-size:11px;color:var(--dim);display:flex;gap:10px;justify-content:space-between}
+button.reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1>治理看板 <small id="ver">—</small></h1>
+  <div class="meta" id="gen">加载中…</div>
+</header>
+
+<nav id="tabs">
+  <button data-t="ips" class="on">IPS 五项</button>
+  <button data-t="factor">因子登记</button>
+  <button data-t="news">新闻映射</button>
+  <button data-t="chain">推演规则</button>
+</nav>
+
+<main>
+  <section id="s-ips"></section>
+  <section id="s-factor" hidden></section>
+  <section id="s-news" hidden></section>
+  <section id="s-chain" hidden></section>
+</main>
+
+<footer>
+  <span id="src">data/board.json</span>
+  <button class="reload" onclick="load()">刷新</button>
+</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = n => (n==null||n==='')?'—':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:2});
+
+function card(title, tag, body){ return `<div class="card"><h2>${esc(title)}<span class="tag">${esc(tag||'')}</span></h2>${body}</div>`; }
+
+// ── IPS 五项 ──
+function renderIPS(d){
+  const ips = d.ips || {};
+  const rows = (ips.items||[]).map(it=>{
+    const cls = it.status==='ok'?'ok':(it.status==='gap'?'bad':'warn');
+    return `<tr><td><b>${esc(it.name)}</b><div class="dim" style="font-size:11px">${esc(it.source||'')}</div></td>
+      <td class="num">${esc(it.value==null?'—':it.value)}</td>
+      <td class="${cls}" style="font-size:11px">${esc(it.note||'')}</td></tr>`;
+  }).join('');
+  let h = card('IPS 一页速查', ips.asOf||'', `
+    <table><thead><tr><th>项</th><th style="text-align:right">值</th><th>说明 / 来源</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=3 class="err">contracts 未就绪</td></tr>'}</tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">${esc(ips.footer||'')}</div>`);
+  if (ips.alerts && ips.alerts.length){
+    h += card('⚠ 当前失效项', String(ips.alerts.length), ips.alerts.map(a=>`<div class="err">· ${esc(a)}</div>`).join(''));
+  }
+  $('#s-ips').innerHTML = h;
+}
+
+// ── 因子登记 ──
+function renderFactor(d){
+  const f = d.factors || {};
+  const sum = f.summary || {};
+  const items = f.factors || [];
+  const byKind = {};
+  items.forEach(x=>{ (byKind[x.kind]=byKind[x.kind]||[]).push(x); });
+  let h = card('因子总数（不可相加）', f.asOf||'', `<div class="kv">
+    <div>暴露·资产类别</div><div><b>${byKind.exposure?new Set(byKind.exposure.map(x=>x.id)).size:0}</b> 个</div>
+    <div>预测因子</div><div><b>${byKind.predictive?new Set(byKind.predictive.map(x=>x.id)).size:0}</b> 个</div>
+    <div>说明</div><div class="dim">${esc(sum.note||'三类因子含义不同，不可相加')}</div></div>`);
+  const tbody = items.map(x=>{
+    const cs = (x.correlations||[]).filter(c=>Math.abs(c.r)>=0.7);
+    const cTxt = cs.length ? cs.map(c=>`${esc(c.with)} ${c.r>0?'+':''}${c.r.toFixed(3)}`).join(' · ') : '<span class="dim">—</span>';
+    return `<tr><td><b>${esc(x.id)}</b><div class="dim" style="font-size:11px">${esc(x.label||'')}</div></td>
+      <td><span class="pill">${esc(x.kind)}</span></td>
+      <td style="font-size:11px">${esc(x.direction||'—')}<div class="dim">${esc(x.updateFrequency||'')}</div></td>
+      <td style="font-size:11px">${cTxt}</td>
+      <td style="font-size:11px" class="dim">${esc(x.invalidation||'—')}</td></tr>`;
+  }).join('');
+  h += card('因子清单', items.length+' 条', `<table><thead><tr><th>id</th><th>类</th><th>方向/频率</th><th>|r|≥0.7</th><th>失效条件</th></tr></thead>
+    <tbody>${tbody||'<tr><td colspan=5 class="err">contracts 未就绪</td></tr>'}</tbody></table>`);
+  if (f.unknowns && f.unknowns.length){
+    h += card('未知项', String(f.unknowns.length), f.unknowns.map(u=>`<div class="dim" style="font-size:12px">· ${esc(u)}</div>`).join(''));
+  }
+  $('#s-factor').innerHTML = h;
+}
+
+// ── 新闻映射 ──
+function renderNews(d){
+  const n = d.news || {};
+  const evs = n.events || [];
+  let h = card('事件映射字典', evs.length+' 类', `<table><thead><tr><th>事件类型</th><th>受影响因子</th><th>资产影响</th><th>可信度</th></tr></thead><tbody>` +
+    (evs.map(e=>`<tr><td><b>${esc(e.eventType)}</b><div class="dim" style="font-size:11px">${esc(e.frequency||'')}</div></td>
+      <td style="font-size:11px">${(e.affectedFactors||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</td>
+      <td style="font-size:11px">${(e.assetImpact||[]).map(a=>`${esc(a.asset)}：${esc(a.direction)}/${esc(a.strength)} <span class="dim">${esc(a.lag||'')}</span>`).join('<br>')}</td>
+      <td><span class="pill ${e.confidence==='A'?'ok':(e.confidence==='C'?'warn':'')}">${esc(e.confidence||'?')}</span></td></tr>`).join('')
+      || '<tr><td colspan=4 class="err">contracts 未就绪</td></tr>') + '</tbody></table>');
+  const wl = n.sourceWhitelist || [];
+  if (wl.length) h += card('来源白名单', wl.length+' 源', `<div>${wl.map(s=>`<span class="pill ${s.tier==='A'?'ok':''}">${esc(s.name||s.id)}</span>`).join('')}</div>`);
+  $('#s-news').innerHTML = h;
+}
+
+// ── 推演规则 ──
+function renderChain(d){
+  const c = d.chain || {};
+  const r = c.rules || {};
+  let h = card('链式推演规则', 'chain-rules/v1', `<div class="kv">
+    <div>跳数上限</div><div><b class="${r.maxHops?'ok':'bad'}">${esc(r.maxHops==null?'未设':r.maxHops)}</b> 跳</div>
+    <div>每跳必填</div><div>${(r.requiredPerHop||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>
+    <div>必须回答</div><div class="warn">${esc(r.mustAnswer||'—')}</div>
+    <div>是否触发交易</div><div class="${r.mayTriggerTrade?'bad':'ok'}">${r.mayTriggerTrade?'可以（危险）':'不可以，仅生成假设'}</div>
+    <div>事后校准</div><div>${esc(r.calibration||'—')}</div></div>`);
+  if (r.knownDeviations && r.knownDeviations.length){
+    h += card('已知偏离（如实登记）', String(r.knownDeviations.length),
+      r.knownDeviations.map(x=>`<div class="err" style="font-size:12px">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
+  }
+  if (c.example){
+    const e = c.example;
+    h += card('示例记录', esc(e.recordId||''), (e.hops||[]).map(hp=>`
+      <div class="hops"><div class="hop"><b>第 ${esc(hp.hop)} 跳</b> <span class="pill ${(hp.probability>=0.7)?'ok':((hp.probability>=0.4)?'warn':'bad')}">p=${esc(hp.probability)}</span>
+      <div>${esc(hp.claim)}</div>
+      <div class="bar"><i style="width:${Math.round((hp.probability||0)*100)}%"></i></div>
+      <div class="dim" style="font-size:11px">观测：${esc(hp.observable)}<br>失效：${esc(hp.invalidation)}</div></div></div>`).join('')
+      + `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(e.conclusion||'')}</div>`);
+  }
+  $('#s-chain').innerHTML = h;
+}
+
+// ── 加载 ──
+async function load(){
+  $('#gen').textContent = '加载 data/board.json …';
+  try{
+    const r = await fetch('data/board.json?_=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    $('#ver').textContent = d.schema || 'board/v1';
+    $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
+    $('#src').textContent = 'data/board.json · ' + ((d.generatedAt||'').slice(0,16));
+    renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
+  }catch(e){
+    $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>';
+  }
+}
+
+$('#tabs').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
+  ['ips','factor','news','chain'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
+});
+load();
+</script>
+</body>
+</html>

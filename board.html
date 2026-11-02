@@ -193,7 +193,13 @@ $('#tabs').addEventListener('click', e=>{
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
   ['ips','factor','news','chain'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
 });
-load();
+function showTab(t){
+  if(!t) t='ips';
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x.dataset.t===t));
+  ['ips','factor','news','chain'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
+}
+window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
+load().then(()=>showTab(location.hash.slice(1)));
 </script>
 </body>
 </html>

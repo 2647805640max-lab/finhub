@@ -1,0 +1,92 @@
+{
+    "schema":  "board/v1",
+    "generatedAt":  "2026-11-02 23:23:13",
+    "generatedBy":  "E:\\investment-os\\tools\\export-board.ps1",
+    "ips":  {
+                "asOf":  "2026-11-02 22:58:24",
+                "items":  [
+                              {
+                                  "status":  "ok",
+                                  "name":  "80/20 口径",
+                                  "source":  "timing_core.py:62-67 POLICY_V1；20% = 15% 风险 + 5% 生活备用金",
+                                  "value":  "市值比例",
+                                  "note":  "不是风险预算口径"
+                              },
+                              {
+                                  "status":  "ok",
+                                  "name":  "风险仓硬顶",
+                                  "source":  "engine_v2.py:87 HARD_MAX_RISKY_POSITION_PCT（硬编码）",
+                                  "value":  "15%",
+                                  "note":  "rules.json 只能收紧、不能放宽"
+                              },
+                              {
+                                  "status":  "ok",
+                                  "name":  "再平衡方式",
+                                  "source":  "engine_v2.py:375-377 band_low/band_high/in_band",
+                                  "value":  "阈值式 [8%,15%]",
+                                  "note":  "带内不动；上沿被 min(15,15+7) 裁到 15，不是 22"
+                              },
+                              {
+                                  "status":  "warn",
+                                  "name":  "风险预算",
+                                  "source":  "rules.json riskBudgetYearPct / dyn_sim.py:581 消费",
+                                  "value":  "11%/年",
+                                  "note":  "参数在用，但 11% 与 15% 仓位的换算关系未定义"
+                              },
+                              {
+                                  "status":  "warn",
+                                  "name":  "回撤熔断",
+                                  "source":  "engine_v2.py:120 max_drawdown_pct；计算链 :629-660",
+                                  "value":  "−25%",
+                                  "note":  "需≥3 同步快照；现仅 3 个且最新=峰值 ⇒ computable=False，且数据停在 10-12"
+                              },
+                              {
+                                  "status":  "gap",
+                                  "name":  "交易频率上限",
+                                  "source":  "仅三道隐含闸：min_trade_amount=100(:129) / 带宽7% / 每日1次校准",
+                                  "value":  "无显式规则",
+                                  "note":  "建议每周≤1次调仓窗口，待用户确认"
+                              }
+                          ],
+                "alerts":  [
+                               "回撤熔断当前 computable=False：最新值即历史峰值，前无更高点，回撤算不出（不是\"没风险\"，是\"看不见\"）",
+                               "持仓快照停在 2026-10-12：近 3 周（含 10/30 美股黑色星期五）的组合回撤从未被观测",
+                               "10-25 减仓执行单由推演直接产出，违反 PROJECT.md §7.5 第 2 条（推演不直接触发交易）"
+                           ],
+                "footer":  "口径根 = investment-engine 源码；契约 = contracts/engine-policy.json（带源码 sha256）"
+            },
+    "factors":  {
+                    "asOf":  null,
+                    "factors":  [
+
+                                ],
+                    "summary":  {
+                                    "note":  "契约未就绪"
+                                },
+                    "unknowns":  [
+
+                                 ]
+                },
+    "news":  {
+                 "events":  [
+
+                            ],
+                 "sourceWhitelist":  [
+
+                                     ]
+             },
+    "chain":  {
+                  "knownDeviations":  [
+
+                                      ],
+                  "example":  null,
+                  "rules":  {
+
+                            }
+              },
+    "_missing":  [
+                     "factor-registry.json",
+                     "news-mapping.json",
+                     "chain-rules.json"
+                 ]
+}

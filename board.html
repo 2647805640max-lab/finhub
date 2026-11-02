@@ -59,19 +59,25 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
 </header>
 
 <nav id="tabs">
-  <button data-t="ips" class="on">IPS 五项</button>
-  <button data-t="factor">因子登记</button>
-  <button data-t="news">新闻映射</button>
-  <button data-t="chain">推演规则</button>
-  <button data-t="audit">审计时间线</button>
+  <button data-t="today" class="on">今日简报</button>
+  <button data-t="ips">配置仪表</button>
+  <button data-t="factor">因子信号</button>
+  <button data-t="news">新闻事件</button>
+  <button data-t="chain">推演假设</button>
+  <button data-t="watch">观察清单</button>
+  <button data-t="audit">审计留痕</button>
+  <button data-t="settings">设置</button>
 </nav>
 
 <main>
-  <section id="s-ips"></section>
+  <section id="s-today"></section>
+  <section id="s-ips" hidden></section>
   <section id="s-factor" hidden></section>
   <section id="s-news" hidden></section>
   <section id="s-chain" hidden></section>
   <section id="s-audit" hidden></section>
+  <section id="s-watch" hidden></section>
+  <section id="s-settings" hidden></section>
 </main>
 
 <footer>
@@ -186,6 +192,71 @@ function renderChain(d){
   $('#s-chain').innerHTML = h;
 }
 
+
+// ── 今日简报（阶段 1 核心）──
+function st(v){ return v?'<span class="ok">正常</span>':'<span class="bad">过期</span>'; }
+function pct(v){ return v==null?'—':(Number(v).toFixed(2)+'%'); }
+function renderToday(d){
+  const td = d.today || {};
+  if (!td.position) { $('#s-today').innerHTML = card('今日简报','', '<div class="err">today 段缺失</div>'); return; }
+  const p = td.position, rb = td.rebalance || {};
+  const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
+  let h = card('① 配置偏离', td.date||'', '<div class="kv">'
+    + '<div>当前风险仓位</div><div><b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span></div>'
+    + '<div>硬顶</div><div>'+pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span></div>'
+    + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
+    + '<div>总财富</div><div>'+(p.totalWealthCny==null?'—':Number(p.totalWealthCny).toLocaleString('zh-CN'))+' 元</div>'
+    + '<div>需净卖出</div><div><b>'+(p.reduceDerived==null?'—':Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2}))+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span></div>'
+    + '<div>数据时点</div><div class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</div></div>'
+    + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
+  h += card('② 再平衡提醒','阈值式', '<div class="kv">'
+    + '<div>运行带</div><div><b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（上沿被硬顶裁到 15，不是 22）</span></div>'
+    + '<div>是否在带内</div><div class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</div>'
+    + '<div>动作</div><div><b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b></div></div>');
+  const pend = td.pending || [];
+  h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length
+    ? ('<table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'
+       + pend.map(function(x){ return '<tr><td><b>'+esc((x.what||'').replace(/\*/g,''))+'</b></td><td class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</td></tr>'; }).join('')
+       + '</tbody></table>')
+    : '<div class="dim">无待确认事项</div>');
+  const fr = td.freshness || [];
+  h += card('④ 数据新鲜度','每格可判定', '<table><thead><tr><th>数据</th><th>时点</th><th>状态</th></tr></thead><tbody>'
+    + fr.map(function(x){ return '<tr><td>'+esc(x.item)+'</td><td class="dim">'+esc(x.asOf||'—')+(x.ageDays!=null?' · '+x.ageDays+'天':'')+'</td><td>'+st(!x.stale)+'</td></tr>'; }).join('')
+    + '</tbody></table>');
+  $('#s-today').innerHTML = h;
+}
+
+// ── 观察清单 ──
+function renderWatch(d){
+  const td = d.today || {};
+  const pend = td.pending || [];
+  let h = card('待你决定', (td.pendingCnt||0)+' 条', pend.length
+    ? pend.map(function(x,i){ return '<div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">'
+        + '<div><b>'+(i+1)+'. '+esc((x.what||'').replace(/\*/g,''))+'</b></div>'
+        + '<div class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</div>'
+        + '<div class="dim" style="font-size:11px">归属：'+esc(x.owner||'user')+'</div></div>'; }).join('')
+    : '<div class="dim">无</div>');
+  h += card('确认后怎么记', 'cli', '<div class="dim" style="font-size:12px">决定之后用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」里。手机端直接按要等阶段 3 的写入 API。</div>');
+  $('#s-watch').innerHTML = h;
+}
+
+// ── 设置（静态说明，无伪造开关）──
+function renderSettings(d){
+  const h = card('数据源', '只读契约', '<div class="kv">'
+    + '<div>看板数据</div><div>data/board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
+    + '<div>口径根</div><div>investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）</div>'
+    + '<div>刷新</div><div>PC 侧重跑 export-board.ps1 后推送；本页每次打开取最新（带 cache-bust）</div>'
+    + '<div>离线</div><div class="dim">无离线缓存；断网时显示读取失败</div></div>')
+  + card('脱敏规则', '硬约束', '<div class="kv">'
+    + '<div>不进公开页</div><div>持仓名称、成本价、amountCny（决策金额）</div>'
+    + '<div>原因</div><div>2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史</div>'
+    + '<div>金额在哪</div><div>只在本机 _audit\\decisions\\decisions.jsonl</div></div>')
+  + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端还不能直接按「确认」——需要阶段 3 的写入 API</div>'
+    + '<div class="err">② 持仓快照过期，简报里仓位是推算值不是实时真值</div>'
+    + '<div class="err">③ 无推送通知（阶段 2）</div>');
+  $('#s-settings').innerHTML = h;
+}
+
 // ── 审计时间线（人工确认留痕）──
 const ACT_CN = {confirm:'已确认', reject:'已否决', defer:'已推迟', note:'仅留痕'};
 const ACT_CLS = {confirm:'ok', reject:'bad', defer:'warn', note:''};
@@ -221,7 +292,7 @@ async function load(){
     $('#ver').textContent = d.schema || 'board/v1';
     $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
     $('#src').textContent = 'data/board.json · ' + ((d.generatedAt||'').slice(0,16));
-    renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d);
+    renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d); renderWatch(d); renderSettings(d);
   }catch(e){
     $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>';
   }
@@ -230,12 +301,12 @@ async function load(){
 $('#tabs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
-  ['ips','factor','news','chain','audit'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
+  ['today','ips','factor','news','chain','watch','audit','settings'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
 });
 function showTab(t){
-  if(!t) t='ips';
+  if(!t) t='today';
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x.dataset.t===t));
-  ['ips','factor','news','chain','audit'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
+  ['today','ips','factor','news','chain','watch','audit','settings'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
 }
 window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
 load().then(()=>showTab(location.hash.slice(1)));

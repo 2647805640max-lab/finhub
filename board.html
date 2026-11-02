@@ -63,6 +63,7 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
   <button data-t="factor">因子登记</button>
   <button data-t="news">新闻映射</button>
   <button data-t="chain">推演规则</button>
+  <button data-t="audit">审计时间线</button>
 </nav>
 
 <main>
@@ -70,6 +71,7 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
   <section id="s-factor" hidden></section>
   <section id="s-news" hidden></section>
   <section id="s-chain" hidden></section>
+  <section id="s-audit" hidden></section>
 </main>
 
 <footer>
@@ -184,6 +186,31 @@ function renderChain(d){
   $('#s-chain').innerHTML = h;
 }
 
+// ── 审计时间线（人工确认留痕）──
+const ACT_CN = {confirm:'已确认', reject:'已否决', defer:'已推迟', note:'仅留痕'};
+const ACT_CLS = {confirm:'ok', reject:'bad', defer:'warn', note:''};
+function renderAudit(d){
+  const a = d.decisions || {};
+  const items = (a.items||[]).slice().reverse();
+  const by = a.byAction || {};
+  let h = card('人工确认留痕', (a.count||0)+' 条', `<div class="kv">
+    <div>总计</div><div><b>${a.count||0}</b> 条 <span class="dim">（append-only，不改旧行）</span></div>
+    <div>已确认</div><div>${by.confirm||0} 条</div>
+    <div>已否决</div><div>${by.reject||0} 条</div>
+    <div>已推迟</div><div>${by.defer||0} 条</div>
+    <div>仅留痕</div><div>${by.note||0} 条</div>
+    <div>脱敏</div><div class="dim">金额 amountCny 不进入本页，只留本机账本</div></div>`);
+  const rows = items.map(x=>`
+    <div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">
+      <div><span class="pill ${ACT_CLS[x.action]||''}">${esc(ACT_CN[x.action]||x.action)}</span> <b>${esc(x.subject)}</b></div>
+      <div class="dim" style="font-size:11px">${esc((x.decidedAt||'').slice(0,16).replace('T',' '))} · ${esc(x.actor||'')} · ${esc(x.source||'')}${x.dataAsOf?' · 依据数据 '+esc(x.dataAsOf):''}</div>
+      ${x.reason?'<div style="font-size:12px;margin-top:3px">'+esc(x.reason)+'</div>':''}
+      ${x.supersedes?'<div class="dim" style="font-size:11px">取代 '+esc(x.supersedes)+'</div>':''}
+    </div>`).join('');
+  h += card('时间线（新→旧）', (a.count||0)+' 条', rows || '<div class="dim">账本为空。用 tools\\log-decision.ps1 记第一条。</div>');
+  h += card('怎么记', 'cli', '<div style="font-size:12px" class="dim">powershell -File tools\\log-decision.ps1 -Action confirm -Subject &quot;减仓执行单&quot; -Reason &quot;已提交&quot;<br>Action 四选一：<b>confirm</b> / <b>reject</b> / <b>defer</b> / <b>note</b>；同 id 重复写会被拒（幂等）。</div>');
+  $('#s-audit').innerHTML = h;
+}
 // ── 加载 ──
 async function load(){
   $('#gen').textContent = '加载 data/board.json …';
@@ -194,7 +221,7 @@ async function load(){
     $('#ver').textContent = d.schema || 'board/v1';
     $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
     $('#src').textContent = 'data/board.json · ' + ((d.generatedAt||'').slice(0,16));
-    renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
+    renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d);
   }catch(e){
     $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>';
   }
@@ -203,12 +230,12 @@ async function load(){
 $('#tabs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
-  ['ips','factor','news','chain'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
+  ['ips','factor','news','chain','audit'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
 });
 function showTab(t){
   if(!t) t='ips';
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x.dataset.t===t));
-  ['ips','factor','news','chain'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
+  ['ips','factor','news','chain','audit'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
 }
 window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
 load().then(()=>showTab(location.hash.slice(1)));

@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-02 23:33:07",
+    "generatedAt":  "2026-11-02 23:43:48",
     "generatedBy":  "E:\\investment-os\\tools\\export-board.ps1",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1603,6 +1603,48 @@
                                 "calibration":  "Brier (p - outcome)^2；例 P21=0.6400"
                             }
               },
+    "decisions":  {
+                      "byAction":  {
+                                       "confirm":  1,
+                                       "note":  2
+                                   },
+                      "items":  [
+                                    {
+                                        "id":  "20261102-P9-现货金-10-30-判定-1",
+                                        "decidedAt":  "2026-11-02T23:43:30+08:00",
+                                        "action":  "note",
+                                        "subject":  "P9 现货金 10-30 判定",
+                                        "reason":  "主源 122.XAU 10-30 收 3875.55 \u003c3950 ⇒ FAIL，已登记更正",
+                                        "source":  "cli",
+                                        "actor":  "lead",
+                                        "dataAsOf":  "2026-10-30",
+                                        "supersedes":  null
+                                    },
+                                    {
+                                        "id":  "20261102-P11-美元指数-10-30-判定-1",
+                                        "decidedAt":  "2026-11-02T23:43:31+08:00",
+                                        "action":  "note",
+                                        "subject":  "P11 美元指数 10-30 判定",
+                                        "reason":  "主源 100.UDI 10-30 收 101.97 ∈[100,104.5] ⇒ PASS",
+                                        "source":  "cli",
+                                        "actor":  "lead",
+                                        "dataAsOf":  "2026-10-30",
+                                        "supersedes":  null
+                                    },
+                                    {
+                                        "id":  "20261102-FinHub-公开仓库脱敏-1",
+                                        "decidedAt":  "2026-11-02T23:43:31+08:00",
+                                        "action":  "confirm",
+                                        "subject":  "FinHub 公开仓库脱敏",
+                                        "reason":  "脱敏+历史重写13→1+finhub-data转私有；旧sha仍可寻址待GC",
+                                        "source":  "cli",
+                                        "actor":  "lead",
+                                        "dataAsOf":  null,
+                                        "supersedes":  null
+                                    }
+                                ],
+                      "count":  3
+                  },
     "_missing":  [
 
                  ]

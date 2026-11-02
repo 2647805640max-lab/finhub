@@ -9,7 +9,7 @@
 :root{--bg:#0a0e14;--card:#111823;--line:#1e2a3a;--txt:#d8e2ef;--dim:#6b7f96;
 --ok:#3ddc97;--warn:#ffb340;--bad:#ff5c5c;--acc:#4da3ff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
+body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
 header{position:sticky;top:0;z-index:9;background:linear-gradient(180deg,#0a0e14 70%,rgba(10,14,20,0));padding:14px 16px 18px}
 h1{font-size:17px;margin:0;display:flex;align-items:center;gap:8px}
 h1 small{font-weight:400;color:var(--dim);font-size:11px}
@@ -19,7 +19,7 @@ nav button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);col
 padding:6px 12px;border-radius:999px;font-size:12px;cursor:pointer}
 nav button.on{background:var(--acc);border-color:var(--acc);color:#04101f;font-weight:600}
 main{padding:14px 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card{overflow-wrap:anywhere;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
 .card h2{font-size:14px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
 .card h2 .tag{font-size:10px;padding:2px 7px;border-radius:999px;background:#0b1220;color:var(--dim);border:1px solid var(--line)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -108,11 +108,13 @@ function renderFactor(d){
   const f = d.factors || {};
   const sum = f.summary || {};
   const items = f.factors || [];
-  const byKind = {};
-  items.forEach(x=>{ (byKind[x.kind]=byKind[x.kind]||[]).push(x); });
+  const grp = {};
+  items.forEach(x=>{ const k=(x.kind==='exposure' ? (x.variant||'exposure') : 'predictive'); grp[k]=(grp[k]||0)+1; });
   let h = card('因子总数（不可相加）', f.asOf||'', `<div class="kv">
-    <div>暴露·资产类别</div><div><b>${byKind.exposure?new Set(byKind.exposure.map(x=>x.id)).size:0}</b> 个</div>
-    <div>预测因子</div><div><b>${byKind.predictive?new Set(byKind.predictive.map(x=>x.id)).size:0}</b> 个</div>
+    <div>暴露·资产类别</div><div><b>${grp['asset-class']||0}</b> 个</div>
+    <div>暴露·因果合并</div><div><b>${grp['causal-chain']||0}</b> 个</div>
+    <div>预测因子</div><div><b>${grp['predictive']||0}</b> 个</div>
+    <div>合计行数</div><div>${items.length} 条 <span class="dim">（8+6+11，前两者同源两套口径，不可相加）</span></div>
     <div>说明</div><div class="dim">${esc(sum.note||'三类因子含义不同，不可相加')}</div></div>`);
   const tbody = items.map(x=>{
     const cs = (x.correlations||[]).filter(c=>Math.abs(c.r)>=0.7);
@@ -167,7 +169,17 @@ function renderChain(d){
       <div>${esc(hp.claim)}</div>
       <div class="bar"><i style="width:${Math.round((hp.probability||0)*100)}%"></i></div>
       <div class="dim" style="font-size:11px">观测：${esc(hp.observable)}<br>失效：${esc(hp.invalidation)}</div></div></div>`).join('')
-      + `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(e.conclusion||'')}</div>`);
+      + (function(c){
+      if(c && typeof c==='object'){
+        return `<div style="font-size:12px;margin-top:8px">
+          <div><b>裁决：</b>${esc(c.verdict||'—')}</div>
+          <div class="dim" style="margin-top:4px">${esc(c.text||'')}</div>
+          ${c.weightEffect?`<div style="margin-top:6px"><b>权重影响：</b><span class="dim">${esc(c.weightEffect)}</span></div>`:''}
+          ${c.whatWouldChangeIt?`<div style="margin-top:6px"><b>什么会推翻它：</b><span class="warn">${esc(c.whatWouldChangeIt)}</span></div>`:''}
+        </div>`;
+      }
+      return `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(c||'')}</div>`;
+    })(e.conclusion));
   }
   $('#s-chain').innerHTML = h;
 }

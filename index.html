@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FinHub · 投资驾驶舱</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#0a0e14; --card:#121820; --card2:#18202b; --line:#1f2a37;
+  --txt:#e6edf3; --dim:#7d8b9c; --up:#f6465d; --dn:#0ecb81; --acc:#4c8dff;
+  --warn:#f5a524; --ok:#0ecb81;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:15px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
+.wrap{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 14px}
+.brand{font-size:19px;font-weight:700;letter-spacing:.5px}
+.brand span{color:var(--acc)}
+.ts{font-size:12px;color:var(--dim);text-align:right;line-height:1.3}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin-bottom:10px}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--dim);font-weight:600;
+  letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--dim);font-weight:400}
+.hero{display:flex;align-items:center;gap:14px}
+.badge{font-size:22px;font-weight:800;padding:8px 16px;border-radius:12px;letter-spacing:1px}
+.badge.trim{background:rgba(246,70,93,.14);color:var(--up);border:1px solid rgba(246,70,93,.35)}
+.badge.add{background:rgba(14,203,129,.14);color:var(--dn);border:1px solid rgba(14,203,129,.35)}
+.badge.wait{background:rgba(125,139,156,.14);color:var(--dim);border:1px solid var(--line)}
+.hero .meta{flex:1}
+.hero .meta .stage{font-size:16px;font-weight:600}
+.hero .meta .adv{font-size:12px;color:var(--dim);margin-top:2px}
+.bars{margin-top:12px;display:grid;gap:8px}
+.bar{display:flex;align-items:center;gap:8px;font-size:12px}
+.bar .lab{width:52px;color:var(--dim)}
+.bar .track{flex:1;height:7px;background:var(--card2);border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;border-radius:4px;transition:width .6s}
+.bar .val{width:38px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.q{background:var(--card2);border-radius:10px;padding:10px}
+.q .n{font-size:12px;color:var(--dim)}
+.q .p{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.q .c{font-size:12px;font-weight:600}
+.up{color:var(--up)} .dn{color:var(--dn)} .fl{color:var(--dim)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:7px 0;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.f{display:flex;justify-content:space-between;align-items:flex-start;
+  padding:9px 0;border-bottom:1px solid var(--line)}
+.f:last-child{border-bottom:none}
+.f .k{font-size:13px}
+.f .k small{display:block;color:var(--dim);font-size:11px;margin-top:1px}
+.f .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.f .v small{display:block;font-size:11px;font-weight:400;margin-top:1px}
+.na{color:var(--warn);font-size:15px}
+.node{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:6px 0}
+.node .id{width:30px;color:var(--acc);font-weight:600}
+.node .jm{flex:1;color:var(--txt)}
+.node .wt{width:46px;height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.node .wt i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.node .wv{width:34px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums}
+.concl{font-size:12.5px;color:#a9b6c4;line-height:1.65;margin-top:10px;
+  padding-top:10px;border-top:1px solid var(--line)}
+.note{font-size:11px;color:var(--dim);margin-top:8px;line-height:1.5}
+.err{color:var(--warn);font-size:12px}
+.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:5px;
+  background:var(--card2);color:var(--dim);margin-left:6px;vertical-align:1px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sum .s{background:var(--card2);border-radius:10px;padding:9px 10px}
+.sum .s .n{font-size:11px;color:var(--dim)}
+.sum .s .p{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+.sum .s .p small{font-size:11px;font-weight:400;display:block;margin-top:1px}
+.alrt{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.alrt:last-child{border-bottom:none}
+.alrt .lv{font-size:10px;padding:1px 6px;border-radius:5px;background:rgba(245,165,36,.14);
+  color:var(--warn);white-space:nowrap;height:fit-content;margin-top:1px}
+.alrt .m{flex:1;line-height:1.45}
+.alrt .m small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+.news{padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.55}
+.news:last-child{border-bottom:none}
+.news b{font-size:13px;display:block;margin-bottom:3px;color:var(--txt)}
+.news .fx{color:#93a1b1}
+.news .fx em{font-style:normal;color:#5a6675}
+.q .d{font-size:10px;color:#5a6675;margin-top:2px}
+.sent{font-size:10px;padding:1px 6px;border-radius:5px;margin-left:6px;font-weight:600}
+.sent.bull{background:rgba(246,70,93,.14);color:var(--up)}
+.sent.bear{background:rgba(14,203,129,.14);color:var(--dn)}
+.sent.neu{background:var(--card2);color:var(--dim)}
+.tags{font-size:10.5px;color:#7d8b9c;margin-top:3px}
+/* 因子分层 */
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
+.fb{font-size:12px;font-weight:700;padding:4px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2)}
+.fb.add{color:var(--up);border-color:rgba(246,70,93,.35);background:rgba(246,70,93,.12)}
+.fb.del{color:var(--dn);border-color:rgba(14,203,129,.35);background:rgba(14,203,129,.12)}
+.fb.nul{color:var(--dim)}
+.arw{color:#4a5666;font-size:13px}
+.vt{font-size:10px;padding:1px 6px;border-radius:5px;font-weight:700;margin-left:4px;white-space:nowrap}
+.vt.add{background:rgba(246,70,93,.14);color:var(--up)}
+.vt.del{background:rgba(14,203,129,.14);color:var(--dn)}
+.vt.nul{background:var(--card2);color:#5a6675}
+.alrt .m b{font-size:13px;font-weight:600}
+.rd{font-size:12px;color:var(--txt);margin-top:2px;font-variant-numeric:tabular-nums}
+.rd em{font-style:normal;color:#5a6675;font-size:10.5px;margin-left:4px}
+.corrbox{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.cb-h{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;font-weight:600}
+.cb-i{font-size:11.5px;color:#93a1b1;margin-top:5px;line-height:1.7}
+/* 口令锁 */
+.lock{border-color:rgba(245,165,36,.35)}
+.row{display:flex;gap:8px;margin-top:10px}
+.row input{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:9px;
+  color:var(--txt);font-size:14px;padding:9px 10px;outline:none}
+.row input:focus{border-color:var(--acc)}
+.row button{background:var(--acc);color:#fff;border:none;border-radius:9px;
+  padding:9px 16px;font-size:13px;font-weight:600}
+/* 人工确认 / 审计留痕 */
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.ab{font-size:11.5px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card2);color:var(--dim);font-weight:600}
+.ab.ok{color:var(--up);border-color:rgba(246,70,93,.3)}
+.ab.no{color:var(--dn);border-color:rgba(14,203,129,.3)}
+.ab:active{opacity:.6}
+.au{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12px}
+.au:last-child{border-bottom:none}
+.au .dc{font-size:10px;padding:1px 6px;border-radius:5px;white-space:nowrap;height:fit-content;margin-top:1px}
+.au .dc.confirm{background:rgba(246,70,93,.14);color:var(--up)}
+.au .dc.reject{background:rgba(14,203,129,.14);color:var(--dn)}
+.au .dc.defer,.au .dc.note{background:var(--card2);color:var(--dim)}
+.au .t{flex:1;line-height:1.45}
+.au .t small{display:block;color:#5a6675;font-size:10.5px;margin-top:1px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1f2a37;
+  color:var(--txt);font-size:12.5px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+#toast.on{opacity:1}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Fin<span>Hub</span></div>
+    <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
+  </header>
+  <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const cls=v=>v>0?'up':(v<0?'dn':'fl');
+const sg=v=>(v>0?'+':'')+v.toFixed(2)+'%';
+const num=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
+
+/* 基线数据源：jsDelivr 的 @main 会在推送后很快刷新，raw.githubusercontent 的 main 分支
+   会被 CDN 缓存好几分钟（实测 5 分钟以上）——两个都试，先到先得。 */
+const DATA_REMOTES=[
+  'https://cdn.jsdelivr.net/gh/2647805640max-lab/finhub-data@main/state.json',
+  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/state.json'
+];
+const DATA_LOCAL='data/state.json';
+let lastSource='';
+let lastAudit=[];      // 最近审计留痕
+let lastRoot='';       // 当前隧道根地址
+let lockState='';      // '' | nokey | bad | offline
+
+/* 个人层口令：只存这台设备的 localStorage，不写进代码、不进公开仓库 */
+const KEY_STORE='fh_key';
+const getKey=()=>localStorage.getItem(KEY_STORE)||'';
+
+async function jget(u,auth){
+  const h={};
+  if(auth&&getKey()) h['X-FH-Key']=getKey();
+  const r=await fetch(u,{cache:'no-store',headers:h});
+  if(r.status===401){const e=new Error('口令不对');e.code=401;throw e;}
+  if(r.status===429){const e=new Error('尝试过多，稍后再试');e.code=429;throw e;}
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  if(!j || !j.generatedAt) throw new Error('数据为空');
+  return j;
+}
+
+/* 审计日志是 JSONL，单独按文本取最后若干条 */
+async function auditRecent(root){
+  if(!root||!getKey()) return [];
+  try{
+    const r=await fetch(root+'/data/audit.jsonl?_='+Date.now(),
+      {cache:'no-store',headers:{'X-FH-Key':getKey()}});
+    if(!r.ok) return [];
+    const t=await r.text();
+    return t.trim().split('\n').filter(Boolean).slice(-6).reverse()
+      .map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(Boolean);
+  }catch(e){ return []; }
+}
+
+async function load(){
+  const bust='_='+Date.now();
+  let base=null, err=null;
+  /* 1) 基线：本机页面优先读本地完整快照；手机读 GitHub raw（含 tunnelUrl） */
+  const IS_LOCAL=/^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  const SOURCES=IS_LOCAL?[DATA_LOCAL,...DATA_REMOTES]:[...DATA_REMOTES,DATA_LOCAL];
+  for(const u of [...SOURCES.map(x=>x+'?'+bust)]){
+    try{ base=await jget(u); break; }catch(e){ err=e; }
+  }
+  if(!base){
+    $('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
+    return;
+  }
+  /* 2) 有隧道地址就直连拿实时（不走 CDN 缓存）
+        分层：公开仓库只有市场层；持仓/新闻/告警/链式推演属于个人层，
+        只在隧道上（/data/personal.json），且需要口令，绝不回落成公开数据。 */
+  let data=base, src='缓存', personalOK=false;
+  lockState='';
+  lastRoot=base.tunnelUrl?base.tunnelUrl.replace(/\/+$/,''):'';
+  if(base.tunnelUrl){
+    try{
+      const live=await jget(lastRoot+'/data/state.json?'+bust);
+      if(!base.ts || (live.ts||0)>=(base.ts||0)){ data=Object.assign({},base,live); src='实时'; }
+    }catch(e){}
+    if(base.holdings&&base.holdings.assets){
+      /* 本机页面（localhost）的 data/state.json 自带个人层，不需要口令 */
+      personalOK=true;
+    }else if(getKey()){
+      try{
+        const per=await jget(lastRoot+'/data/personal.json?'+bust, true);
+        if(per&&typeof per==='object'){ data=Object.assign({},data,per); personalOK=true; }
+      }catch(e){ lockState=(e.code===401||e.code===429)?'bad':'offline'; }
+    }else{ lockState='nokey'; }
+    lastAudit=await auditRecent(lastRoot);
+  }
+  data.__personalOK=personalOK;
+  if(!data.tunnelUrl) data.tunnelUrl=base.tunnelUrl;
+  lastSource=src + (personalOK?'':' · 个人层未解锁');
+
+  render(data);
+}
+
+function render(s){
+  const e=s.engine||{}, sc=e.scores||{}, m=s.market||{}, b=s.bonds||{}, c=s.commodity||{};
+  const act=(e.marketAction||'WAIT');
+  const actCls=act==='TRIM'||act==='EXIT'?'trim':(act==='ADD'?'add':'wait');
+  const actCN={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[act]||act;
+  let h='';
+
+  /* 个人层口令锁 */
+  if(lockState){
+    const msg=lockState==='bad'?'口令不对（或尝试过多）。重新输入：'
+      :(lockState==='offline'?'隧道暂时读不到个人层，稍后自动重试。也可以重新输入口令：'
+      :'持仓 / 告警 / 新闻 / 链式推演在隧道上，需要口令才能读。公开仓库里没有这些数据。');
+    h+=`<div class="card lock">
+      <h2>个人层${lockState==='bad'?'未解锁':'已锁定'} <span class="tag">本机保存 · 不进仓库</span></h2>
+      <div class="note">${msg}</div>
+      <div class="row"><input id="kin" type="password" placeholder="口令" autocomplete="off" autocapitalize="off">
+        <button id="kbtn">解锁</button></div>
+      <div class="note" id="kmsg"></div>
+    </div>`;
+  }
+
+  /* 大盘裁决 */
+  h+=`<div class="card">
+    <h2>大盘裁决 <span class="tag">引擎 · 收盘序列</span></h2>
+    <div class="hero">
+      <div class="badge ${actCls}">${actCN}</div>
+      <div class="meta">
+        <div class="stage">${e.mainStage||'—'} <span class="pill">一致率 ${e.stageAgreement!=null?(e.stageAgreement*100).toFixed(0)+'%':'—'}</span></div>
+        <div class="adv">${e.advice||''}</div>
+      </div>
+    </div>
+    <div class="bars">
+      ${bar('机会分',sc.opportunity,100,'var(--dn)')}
+      ${bar('风险分',sc.risk,100,'var(--up)')}
+      <div class="bar"><span class="lab">投票</span><span class="track" style="background:none;
+        color:var(--dim);font-size:11.5px;height:auto">加仓 ${e.votes?.add??0}/${e.votes?.n??4} · 跑路 ${e.votes?.run??0}/${e.votes?.n??4}</span></div>
+    </div>
+    ${actBtns('engine',"裁决 "+actCN+" "+s.generatedAt)}
+  </div>`;
+
+  /* 因子分层：因果层（进裁决）/ 相关层（只进评分） */
+  const ca=s.causal||{};
+  if(ca.factors){
+    const voteChip=v=>v>0?'<span class="vt add">+1 票</span>':(v<0?'<span class="vt del">−1 票</span>':'<span class="vt nul">0 票</span>');
+    const actCN2=a=>({ADD:'加仓',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[a]||a||'—');
+    h+=`<div class="card">
+      <h2>因子分层 <span class="tag">因果进裁决 · 相关只评分</span></h2>
+      <div class="flow">
+        <span class="fb ${ca.baseAction==='ADD'?'add':(ca.baseAction==='WAIT'?'nul':'del')}">引擎 ${actCN2(ca.baseAction)}</span>
+        <span class="arw">→</span>
+        <span class="fb ${ca.finalAction==='ADD'?'add':(ca.finalAction==='WAIT'?'nul':'del')}">因果修正 ${actCN2(ca.finalAction)}</span>
+        <span class="pill">${ca.changed?'已改判':'未改判'} · 信心 ${ca.confidence||'—'}</span>
+      </div>`;
+    ca.factors.forEach(f=>{
+      h+=`<div class="alrt">
+        <span class="lv" style="background:var(--card2);color:var(--acc)">${f.id}</span>
+        <div class="m"><b>${f.name}</b> ${voteChip(f.vote)}
+          <div class="rd">${f.read}${f.asof?' <em>'+f.asof+'</em>':''}</div>
+          <small>机制：${f.mechanism}</small>
+          <small>证据：${f.evidence}</small>
+          ${f.divergence?`<small style="color:var(--warn)">背离：${f.divergence}</small>`:''}
+          ${f.staleNote?`<small style="color:var(--warn)">${f.staleNote}</small>`:''}
+        </div></div>`;
+    });
+    const cr=ca.correlation||{};
+    if((cr.items||[]).length){
+      h+=`<div class="corrbox">
+        <div class="cb-h">相关层综合评分（只进评分，不投票）<span class="${cls(cr.score)}">${cr.score==null?'—':(cr.score>0?'+':'')+cr.score}</span></div>
+        <div class="note">${cr.note||''}　明细见下方「相关层因子」卡。</div>
+      </div>`;
+    }
+    if((ca.notes||[]).length){
+      h+=`<div class="concl">${ca.notes.map(n=>'· '+n).join('<br>')}</div>`;
+    }
+    h+=`<div class="note">规则：因果因子须同时满足「有可命名传导机制」+「历史样本方向可复现」，才允许改 action；相关因子只描述风险偏好。历史证据每周重算（n=样本数，20 交易日窗口，未扣成本）。</div></div>`;
+  }
+
+  const f2=b.F2||{},f3=b.F3||{},oil=c.OIL||{},cl=c.CL||{},xau=c.XAU||{};
+  const d2=f2.value!=null&&f2.prev!=null?(f2.value-f2.prev).toFixed(4):null;
+  const d3=f3.value!=null&&f3.prev!=null?(f3.value-f3.prev).toFixed(2):null;
+  h+=`<div class="card">
+    <h2>三因子 <span class="tag">收盘 ${b.asof||'—'}</span></h2>
+    <div class="f"><div class="k">F1 布伦特（ICE Dec-2026）
+      <small>锁定口径 · 今日结算价未产生</small></div>
+      <div class="v na">未取得<small>见下方盘中观测</small></div></div>
+    <div class="f"><div class="k">F2 中国10年期国债
+      <small>10Y−2Y 利差 ${num(f2.spread,4)}${f2.date&&f2.date!==b.asof?' · 数据日 '+f2.date:''}</small></div>
+      <div class="v">${num(f2.value,4)}%<small class="${d2>0?'up':(d2<0?'dn':'fl')}">${d2>0?'+':''}${d2??'—'} bp</small></div></div>
+    <div class="f"><div class="k">F3 美国30年期国债
+      <small>美10Y ${num(f3.us10y,2)}%${f3.date&&f3.date!==b.asof?' · 数据日 '+f3.date:''}</small></div>
+      <div class="v">${num(f3.value,2)}%<small class="${d3>0?'up':(d3<0?'dn':'fl')}">${d3>0?'+':''}${d3??'—'} bp</small></div></div>
+    <div class="note">口径纪律：F1 必须是 ICE Brent Dec-2026 官方结算价，近月 Jan-2027 报价不得冒充。下方为盘中 tick，仅供方向参考。</div>
+  </div>`;
+
+  /* 盘中观测 */
+  h+=`<div class="card">
+    <h2>盘中观测 <span class="tag">非判定口径</span></h2>
+    <div class="grid">
+      ${q('Brent 近月 Jan-2027',oil.price,oil.chgPct)}
+      ${q('WTI Dec-2026',cl.price,cl.chgPct)}
+      ${q('伦敦金现货',xau.price,xau.chgPct)}
+      ${q('黄金ETF',(m.watch||[]).find(w=>w.code==='sh518880')?.price,(m.watch||[]).find(w=>w.code==='sh518880')?.chgPct)}
+    </div>
+  </div>`;
+
+  /* 扩展因子（参考，不进裁决） */
+  const ex=s.expanded||{};
+  if((ex.items||[]).length){
+    h+=`<div class="card"><h2>相关层因子 <span class="tag">只进评分 · 不投票</span></h2><div class="grid">`;
+    ex.items.forEach(r=>{
+      h+=`<div class="q"><div class="n">${r.name}</div>
+        <div class="p">${r.kind==='fut'?num(r.price,0):num(r.price,2)}</div>
+        <div class="c ${cls(r.chgPct)}">${r.chgPct==null?'—':sg(r.chgPct)}</div>
+        ${r.asof?`<div class="d">${r.asof}</div>`:''}</div>`;
+    });
+    h+=`</div><div class="note">指数取海外源（Yahoo，含 KOSPI）最近价；碳酸锂·玻璃·豆粕为主力连续，按昨结算算涨跌。这些只有「一起动」的历史，没有稳定传导机制，所以只进评分、不投票。</div></div>`;
+  }
+
+  /* 海外宏观（洛杉矶直连） */
+  const ov=s.overseas||{};
+  const fr=(ov.fred||{}).items||[];
+  const fedChg=(ov.fedChanges||[]);
+  if(fr.length){
+    const lastFed=fedChg.length?fedChg[fedChg.length-1]:null;
+    h+=`<div class="card"><h2>海外宏观 <span class="tag">VPS 直连 · 参考</span></h2><div class="grid">`;
+    fr.forEach(r=>{
+      h+=`<div class="q"><div class="n">${r.name}</div>
+        <div class="p">${num(r.value,2)}<span style="font-size:12px">%</span></div>
+        <div class="c ${cls(r.chg==null?null:-r.chg)}">${r.chg==null?'—':(r.chg>0?'+':'')+num(r.chg,2)+'pp'}</div>
+        <div class="d">${r.asof||''}</div></div>`;
+    });
+    h+=`</div>`;
+    if(lastFed){
+      const d=Math.round((Date.now()-new Date(lastFed.effective+'T00:00:00+08:00').getTime())/86400000);
+      h+=`<div class="note">Fed 最近一次目标区间变动：${lastFed.effective} 生效 ${lastFed.bp>0?'+':''}${lastFed.bp}bp → 区间 ${lastFed.level}，距今 ${d} 天。表由 Fed 官网 openmarket.htm 自动更新，不再手工维护。</div>`;
+    }
+    h+=`</div>`;
+  }
+
+  /* 四大指数 */
+  h+=`<div class="card"><h2>四大指数 <span class="tag">实时</span></h2><table>`;
+  (m.indices||[]).forEach(i=>{
+    h+=`<tr><td>${i.name}</td><td class="r">${num(i.price,2)}</td>
+        <td class="r ${cls(i.chgPct)}">${sg(i.chgPct)}</td></tr>`;
+  });
+  h+=`</table></div>`;
+
+  /* 持仓相关 ETF */
+  h+=`<div class="card"><h2>持仓板块 ETF <span class="tag">实时</span></h2><table>`;
+  (m.watch||[]).forEach(w=>{
+    h+=`<tr><td>${w.name}<span class="pill">${w.code.replace('sh','').replace('sd','')}</span></td>
+        <td class="r">${num(w.price,3)}</td>
+        <td class="r ${cls(w.chgPct)}">${sg(w.chgPct)}</td></tr>`;
+  });
+  h+=`</table></div>`;
+
+  /* 持仓总览（真实账户） */
+  const hd=s.holdings||{};
+  if(hd.error){
+    h+=`<div class="card"><h2>我的持仓 <span class="tag">读取失败</span></h2>
+        <div class="err">${hd.error}</div></div>`;
+  }else if(!hd.assets && s.__personalOK===false){
+    h+=`<div class="card"><h2>我的持仓 <span class="tag">未连接</span></h2>
+        <div class="note">持仓/告警/新闻属于个人层，只通过 VPS 隧道传输，不放在公开仓库。
+        当前隧道未连通，所以看不到 —— 这是有意设计，不是数据丢了。电脑端与 VPS 恢复后自动出现。</div></div>`;
+  }else{
+    const pnlCls=cls(hd.totalPnl);
+    h+=`<div class="card">
+      <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'}</span></h2>
+      <div class="sum">
+        <div class="s"><div class="n">总资产（市值+现金）</div>
+          <div class="p">${num(hd.assets,0)}</div></div>
+        <div class="s"><div class="n">浮动盈亏</div>
+          <div class="p ${pnlCls}">${hd.totalPnl==null?'—':(hd.totalPnl>0?'+':'')+num(hd.totalPnl,0)}
+          <small class="${pnlCls}">${hd.totalPnlPct==null?'':(hd.totalPnlPct>0?'+':'')+num(hd.totalPnlPct,2)+'%'}</small></div></div>
+      </div>
+      <table>`;
+    (hd.platforms||[]).forEach(p=>{
+      h+=`<tr><td>${p.platform}<span class="pill">${p.date||''}</span></td>
+          <td class="r">${num(p.mv,0)}</td>
+          <td class="r ${cls(p.pnl)}">${p.pnl==null?'—':(p.pnl>0?'+':'')+num(p.pnl,0)}</td></tr>`;
+    });
+    h+=`<tr><td style="color:var(--dim)">现金合计</td><td class="r">${num(hd.totalCash,0)}</td><td class="r fl">—</td></tr>`;
+    h+=`</table>`;
+    h+=`<h2 style="margin-top:14px">Top 持仓 <span class="tag">共 ${hd.nPositions||(hd.positions||[]).length||0} 只</span></h2><table>`;
+    (hd.positions||[]).slice(0,8).forEach(p=>{
+      h+=`<tr><td>${p.name}</td><td class="r">${num(p.mv,0)}</td>
+          <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':sg(p.pnlPct)}</td></tr>`;
+    });
+    h+=`</table><div class="note">市值/成本来自 finwatch 最新快照（非实时净值）。盈亏仅统计有成本记录的持仓${hd.costCoveragePct!=null?`（覆盖市值 ${hd.costCoveragePct}%）`:''}。</div></div>`;
+  }
+
+  /* 告警 */
+  const al=s.alerts||{};
+  if((al.items||[]).length){
+    h+=`<div class="card"><h2>告警 <span class="tag">累计 ${al.total||0} 条</span></h2>`;
+    al.items.forEach(a=>{
+      h+=`<div class="alrt"><span class="lv">${a.level||'提示'}</span>
+        <div class="m">${a.msg||''}${a.action?`<small>${a.action}</small>`:''}
+        <small>${a.ts} · ${a.rule||''}</small></div></div>`;
+    });
+    h+=`</div>`;
+  }
+
+  /* 每日新闻摘要（含 AI 打分，只展示不参与裁决） */
+  const nw=s.news||{}, ns=s.newsscore||{};
+  const scmap={};
+  (ns.items||[]).forEach(x=>{ scmap[x.n]=x; });
+  if((nw.items||[]).length){
+    const net=ns.net;
+    const netTxt=net==null?'':`AI 净情绪 ${net>0?'+':''}${net.toFixed(1)}`;
+    h+=`<div class="card"><h2>每日新闻 <span class="tag">${nw.date||'—'}${netTxt?' · '+netTxt:''}</span></h2>`;
+    nw.items.forEach(n=>{
+      const x=scmap[n.n]||{};
+      const scls=x.s>0?'bull':(x.s<0?'bear':'neu');
+      const slabel=x.s>0?'利好':(x.s<0?'利空':'中性');
+      h+=`<div class="news"><b>${n.n}. ${n.title}${x.s!=null?`<span class="sent ${scls}">${slabel}</span>`:''}</b>
+        ${n.fact?`<div class="fx">${n.fact}</div>`:''}
+        ${(x.sectors&&x.sectors.length)?`<div class="tags">${x.sectors.join(' · ')}${x.why?' — '+x.why:''}</div>`:''}</div>`;
+    });
+    h+=`<div class="note">${ns.error?'AI 打分失败：'+ns.error+'。':'打分为 AI 方向性判断，只做参考，不参与引擎裁决。'}只摘「事实」段，全文见 PC 端 daily-news/digest_${nw.date||''}.md</div></div>`;
+  }else if(nw.error){
+    h+=`<div class="card"><h2>每日新闻 <span class="tag">未取到</span></h2><div class="err">${nw.error}</div></div>`;
+  }
+
+  /* 链式推演 */
+  const ch=s.chain||{};
+  h+=`<div class="card">
+    <h2>链式推演 <span class="tag">${ch.logDate||'—'}</span></h2>`;
+  (ch.nodes||[]).forEach(n=>{
+    h+=`<div class="node"><span class="id">${n.node}</span><span class="jm">${n.judgement}</span>
+        <span class="wt"><i style="width:${(n.weight*100).toFixed(0)}%"></i></span>
+        <span class="wv">${n.weight!=null?n.weight.toFixed(2):'—'}</span></div>`;
+  });
+  if(ch.conclusion) h+=`<div class="concl">${ch.conclusion}</div>`;
+  h+=`${actBtns('chain','推演 '+(ch.logDate||''))}</div>`;
+
+  /* 人工确认留痕（只在解锁后显示） */
+  if(lastAudit.length){
+    const cnt={'confirm':0,'reject':0,'defer':0,'note':0};
+    lastAudit.forEach(a=>{ if(cnt[a.decision]!=null) cnt[a.decision]++; });
+    h+=`<div class="card"><h2>确认留痕 <span class="tag">最近 ${lastAudit.length} 条 · 存 VPS</span></h2>`;
+    lastAudit.forEach(a=>{
+      h+=`<div class="au"><span class="dc ${a.decision}">${a.label||a.decision}</span>
+        <div class="t">${a.ref?a.ref+' · ':''}${a.item}
+        ${a.note?`<small>备注：${a.note}</small>`:''}<small>${a.ts}</small></div></div>`;
+    });
+    h+=`<div class="note">这些记录只写 VPS 的 audit.jsonl（需口令可读），不进公开仓库。用来看「当时怎么判的、后来对没对」——推演命中率以后就从这里算。</div></div>`;
+  }
+
+  $('#app').innerHTML=h;
+  $('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
+  document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+}
+function bar(lab,v,max,col){
+  const pct=Math.max(0,Math.min(100,(v||0)/max*100));
+  return `<div class="bar"><span class="lab">${lab}</span>
+    <span class="track"><i class="fill" style="width:${pct}%;background:${col}"></i></span>
+    <span class="val">${v==null?'—':v.toFixed(1)}</span></div>`;
+}
+function q(n,p,c){
+  return `<div class="q"><div class="n">${n}</div>
+    <div class="p">${p==null?'—':Number(p).toFixed(2)}</div>
+    <div class="c ${cls(c)}">${c==null?'—':sg(c)}</div></div>`;
+}
+/* 人工确认按钮：只在个人层解锁后可用（写 VPS 审计日志需要口令） */
+function actBtns(item,ref){
+  if(!getKey()||lockState) return `<div class="note">解锁后可记录「确认 / 否决 / 备注」。</div>`;
+  return `<div class="acts" data-item="${item}" data-ref="${(ref||'').replace(/"/g,'')}">
+    <button class="ab ok" data-d="confirm">确认执行</button>
+    <button class="ab" data-d="defer">暂不动作</button>
+    <button class="ab no" data-d="reject">否决</button>
+    <button class="ab" data-d="note">写备注</button></div>`;
+}
+
+let toastT=null;
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200);
+}
+
+async function sendAudit(item,decision,note,ref){
+  if(!lastRoot){ toast('隧道未连接，无法留痕'); return false; }
+  try{
+    const r=await fetch(lastRoot+'/api/confirm',{method:'POST',cache:'no-store',
+      headers:{'X-FH-Key':getKey(),'Content-Type':'application/json'},
+      body:JSON.stringify({item:item,decision:decision,note:note||'',ref:ref||''})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    toast('已留痕');
+    await load();
+    return true;
+  }catch(e){ toast('留痕失败：'+e.message); return false; }
+}
+
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest?ev.target.closest('.ab'):null;
+  if(!b) return;
+  const box=b.closest('.acts');
+  const item=box.dataset.item, ref=box.dataset.ref||'', d=b.dataset.d;
+  if(d==='note'){
+    const t=window.prompt('备注（会随留痕存进 VPS）');
+    if(t&&t.trim()) sendAudit(item,'note',t.trim(),ref);
+    return;
+  }
+  sendAudit(item,d,'',ref);
+});
+
+document.addEventListener('click',ev=>{
+  const kb=ev.target.closest?ev.target.closest('#kbtn'):null;
+  if(!kb) return;
+  const el=$('#kin'), v=(el&&el.value||'').trim();
+  if(!v){ $('#kmsg').textContent='请输入口令'; return; }
+  localStorage.setItem(KEY_STORE,v);
+  $('#kmsg').textContent='验证中…';
+  load();
+});
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='Enter'&&ev.target&&ev.target.id==='kin'){
+    const kb=$('#kbtn'); if(kb) kb.click();
+  }
+});
+
+load(); setInterval(load,60000);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

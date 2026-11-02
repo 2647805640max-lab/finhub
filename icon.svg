@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="110" fill="#0a0e14"/>
+  <path d="M96 344 L176 264 L240 312 L320 168 L416 208" fill="none"
+        stroke="#4c8dff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="416" cy="208" r="22" fill="#0ecb81"/>
+  <text x="256" y="440" font-family="-apple-system,PingFang SC,sans-serif" font-size="72"
+        font-weight="700" fill="#e6edf3" text-anchor="middle">FH</text>
+</svg>

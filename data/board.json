@@ -1,6 +1,6 @@
 {
  "schema": "board/v1",
- "generatedAt": "2026-11-03 20:30:42",
+ "generatedAt": "2026-11-03 20:33:55",
  "generatedBy": "E:\\investment-os\\tools\\export-board.ps1",
  "ips": {
   "asOf": "2026-11-02 22:58:24",
@@ -1629,7 +1629,7 @@
    "dataAsOf": "2026-11-03",
    "dataAgeDays": 0.1,
    "stale": false,
-   "note": "仓位为 10-29/30 派生重算；持仓快照过期时它是推算值，不是实时真值"
+   "note": "仓位取 metrics.json 里最新一条 derived（当前 2026-11-03 派生重算）；持仓快照过期时它是推算值，不是实时真值"
   },
   "rebalance": {
    "bandLowPct": 8,
@@ -1680,7 +1680,7 @@
    },
    {
     "item": "决策账本",
-    "asOf": "2026-11-03 20:30",
+    "asOf": "2026-11-03 20:33",
     "ageDays": 0,
     "stale": false
    }

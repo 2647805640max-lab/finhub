@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 01:14:01",
+    "generatedAt":  "2026-11-04 01:44:04",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 01:14",
+                                        "asOf":  "2026-11-04 01:44",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 01:14:02",
+                       "checkedAt":  "2026-11-04 01:44:05",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1713,7 +1713,7 @@
                                          "id":  "holdings",
                                          "label":  "持仓快照",
                                          "asOf":  "2026-11-03 18:38",
-                                         "ageDays":  0.27,
+                                         "ageDays":  0.3,
                                          "maxAgeDays":  3,
                                          "stale":  false
                                      },
@@ -1721,7 +1721,7 @@
                                          "id":  "engine-policy",
                                          "label":  "引擎政策契约",
                                          "asOf":  "2026-11-02 22:58",
-                                         "ageDays":  1.09,
+                                         "ageDays":  1.12,
                                          "maxAgeDays":  14,
                                          "stale":  false
                                      },
@@ -1729,7 +1729,7 @@
                                          "id":  "factor-registry",
                                          "label":  "因子登记表",
                                          "asOf":  "2026-11-02 23:27",
-                                         "ageDays":  1.07,
+                                         "ageDays":  1.09,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1737,7 +1737,7 @@
                                          "id":  "news-mapping",
                                          "label":  "新闻映射",
                                          "asOf":  "2026-11-02 23:26",
-                                         "ageDays":  1.07,
+                                         "ageDays":  1.1,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1745,7 +1745,7 @@
                                          "id":  "chain-rules",
                                          "label":  "推演规则",
                                          "asOf":  "2026-11-02 23:23",
-                                         "ageDays":  1.08,
+                                         "ageDays":  1.1,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1753,7 +1753,7 @@
                                          "id":  "decisions",
                                          "label":  "决策账本",
                                          "asOf":  "2026-11-02 23:43",
-                                         "ageDays":  1.06,
+                                         "ageDays":  1.08,
                                          "maxAgeDays":  7,
                                          "stale":  false
                                      },
@@ -1761,7 +1761,7 @@
                                          "id":  "rules",
                                          "label":  "风控规则",
                                          "asOf":  "2026-11-03 22:26",
-                                         "ageDays":  0.12,
+                                         "ageDays":  0.14,
                                          "maxAgeDays":  14,
                                          "stale":  false
                                      }
@@ -1770,8 +1770,8 @@
                    },
     "nationalTeam":  {
                          "ok":  true,
-                         "lastSuccess":  "2026-11-04 01:00:47",
-                         "asOf":  "2026-11-04 01:00:47",
+                         "lastSuccess":  "2026-11-04 01:30:48",
+                         "asOf":  "2026-11-04 01:30:48",
                          "note":  "",
                          "items":  [
                                        {
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 01:14:04",
+                          "generatedAt":  "2026-11-04 01:44:06",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 01:14:04",
+                       "generatedAt":  "2026-11-04 01:44:06",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2000,8 +2000,8 @@
                                              "title":  "数据实时性流水线",
                                              "kind":  "every",
                                              "everySeconds":  1800,
-                                             "scheduledAt":  "2026-11-03T17:43:56.989Z",
-                                             "nextRunAt":  "2026-11-04 01:43:56"
+                                             "scheduledAt":  "2026-11-03T18:13:56.989Z",
+                                             "nextRunAt":  "2026-11-04 02:13:56"
                                          }
                                      ],
                        "lastRuns":  [
@@ -2046,20 +2046,26 @@
                                             "overall":  "WARN",
                                             "durationMs":  67533,
                                             "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T01:15:07+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  66931,
+                                            "dataAgeMin":  1.1
                                         }
                                     ],
                        "stats":  {
-                                     "total":  7,
+                                     "total":  8,
                                      "ok":  0,
-                                     "warn":  6,
+                                     "warn":  7,
                                      "fail":  1,
-                                     "consecutiveBad":  7,
-                                     "lastRunAt":  "2026-11-04T00:45:07+08:00",
+                                     "consecutiveBad":  8,
+                                     "lastRunAt":  "2026-11-04T01:15:07+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {
                                       "status":  "degraded",
-                                      "reason":  "连续 7 次异常（最近 = WARN）"
+                                      "reason":  "连续 8 次异常（最近 = WARN）"
                                   },
                        "degraded":  [
 

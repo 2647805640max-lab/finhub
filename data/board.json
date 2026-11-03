@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 02:48:14",
+    "generatedAt":  "2026-11-04 02:49:21",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 02:48",
+                                        "asOf":  "2026-11-04 02:49",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 02:48:15",
+                       "checkedAt":  "2026-11-04 02:49:22",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 02:48:16",
+                          "generatedAt":  "2026-11-04 02:49:22",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 02:48:16",
+                       "generatedAt":  "2026-11-04 02:49:23",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2005,12 +2005,6 @@
                                          }
                                      ],
                        "lastRuns":  [
-                                        {
-                                            "at":  "2026-11-04T00:07:58+08:00",
-                                            "overall":  "WARN",
-                                            "durationMs":  135930,
-                                            "dataAgeMin":  2.3
-                                        },
                                         {
                                             "at":  "2026-11-04T00:17:43+08:00",
                                             "overall":  "WARN",
@@ -2124,6 +2118,12 @@
                                             "overall":  "WARN",
                                             "durationMs":  65862,
                                             "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T02:49:20+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  66556,
+                                            "dataAgeMin":  1.1
                                         }
                                     ],
                        "stats":  {
@@ -2132,7 +2132,7 @@
                                      "warn":  20,
                                      "fail":  0,
                                      "consecutiveBad":  20,
-                                     "lastRunAt":  "2026-11-04T02:47:36+08:00",
+                                     "lastRunAt":  "2026-11-04T02:49:20+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {

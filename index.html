@@ -144,6 +144,17 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
 #toast.on{opacity:1}
 
+.freshbar{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.freshbar.ok{background:#12301f;border:1px solid #1d4b3a;color:#3ddc97}
+.freshbar.warn{background:#33290f;border:1px solid #4b3d1d;color:#ffb340}
+.freshbar.bad{background:#3a1717;border:1px solid #4b1d1d;color:#ff5c5c}
+.nttbl{width:100%;border-collapse:collapse;font-size:12px}
+.nttbl td{padding:4px 0;border-bottom:1px solid #1c2430}
+.nttbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+.xcard{margin:10px 0;padding:12px 14px;border:1px solid #1c2430;border-radius:12px;background:#0f151d}
+.xcard h3{margin:0 0 8px;font-size:14px;color:#e6edf5}
+.xnote{color:#7c8899;font-size:11px;line-height:1.5;margin-top:8px}
+.xbtn{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px;border:0}
 </style>
 </head>
 <body>
@@ -152,6 +163,7 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <div class="brand">Fin<span>Hub</span></div>
     <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
   </header>
+  <div id="freshbar" class="freshbar" hidden></div>
   <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
 </div>
 <script>
@@ -241,6 +253,7 @@ async function load(){
   lastSource=src + (personalOK?'':' · 个人层未解锁');
 
   render(data);
+  loadExtras();
 }
 
 function render(s){
@@ -641,6 +654,88 @@ document.addEventListener('keydown',ev=>{
 
 load(); setInterval(load,60000);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* ── 治理扩展（2026-11-03）：时效 / 国家队 / 通知 / 看板入口 ──
+   复用 board.html 已生成的 board.json；不改 state.json 契约，不动原有渲染。 */
+const EXTRAS_SOURCES=[
+  'data/board.json',
+  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json'
+];
+async function loadExtras(){
+  let b=null;
+  for(const u of EXTRAS_SOURCES){
+    try{ b=await jget(u+(u.indexOf('?')>=0?'&':'?')+'_='+Date.now()); break; }catch(e){}
+  }
+  const bar=document.getElementById('freshbar');
+  if(!b){
+    if(bar){ bar.hidden=false; bar.className='freshbar warn';
+      bar.textContent='⚠ 取不到治理数据（board.json）——上方为基础层，时效未知'; }
+    return;
+  }
+  window.__extrasData=b;
+  renderExtras(b);
+}
+function renderExtras(b){
+  const bar=document.getElementById('freshbar');
+  const f=b._freshness;
+  if(bar){
+    bar.hidden=false;
+    if(!f){ bar.className='freshbar warn'; bar.textContent='⚠ 无时效信息（数据可能过期）'; }
+    else{
+      bar.className='freshbar '+(f.worst==='critical'?'bad':(f.worst==='stale'?'warn':'ok'));
+      const h=(f.items||[]).find(x=>x.id==='holdings');
+      let t=(f.worst==='critical'?'⚠ ':(f.worst==='stale'?'△ ':'✓ '))+f.banner;
+      if(h&&h.asOf) t+='　（持仓 '+h.asOf+(h.ageDays!=null?' / '+h.ageDays+'天':'')+'）';
+      bar.textContent=t;
+    }
+  }
+  const app=document.getElementById('app');
+  if(!app) return;
+  let x='';
+  const n=b.nationalTeam;
+  if(n){
+    if(!n.ok){ x+='<div class="xcard"><h3>国家队动向</h3><div class="xnote" style="color:#ff5c5c">拉取失败：'+(n.error||'未知')+'（失败时不显示旧数）</div></div>'; }
+    else{
+      const s=n.summary||{}, it=n.items||[];
+      x+='<div class="xcard"><h3>国家队动向 · F2-补</h3>'
+       +'<div class="xnote">采集 '+(n.lastSuccess||'—')+' ｜ 区间 '+(n.datePrev||'—')+' → '+(n.dateCurrent||'—')
+       +' ｜ 共 '+(s.total||0)+' 只（增 '+(s.up||0)+' / 减 '+(s.down||0)+' / 平 '+(s.flat||0)+'）</div>'
+       +'<table class="nttbl"><tbody>'+it.map(function(v){
+          return '<tr><td>'+v.name+'<div class="xnote" style="margin:0;font-size:10px">'+v.code+'</div></td>'
+            +'<td class="r" style="color:'+(v.deltaShares>0?'#3ddc97':'#ff5c5c')+'">'+(v.deltaWan>0?'+':'')+v.deltaWan+' 万份</td>'
+            +'<td class="r">'+(v.deltaPct>0?'+':'')+v.deltaPct+'%</td></tr>';
+        }).join('')+'</tbody></table>'
+       +'<div class="xnote">'+(n.discipline||'')+'</div></div>';
+    }
+  }
+  const q=b.notifications;
+  if(q&&q.items&&q.items.length){
+    x+='<div class="xcard"><h3>通知 · '+(q.count||0)+' 条</h3>'
+     +q.items.map(function(v){
+        const c=v.level==='urgent'?'#ff5c5c':(v.level==='watch'?'#ffb340':'#7c8899');
+        return '<div style="margin-bottom:8px"><span style="color:'+c+';font-size:11px">['+v.level+']</span> <b>'+v.title+'</b>'
+          +'<div class="xnote" style="margin-top:2px">'+(v.body||'')+'</div></div>';
+      }).join('')
+     +'<button class="xbtn" onclick="askNotify()">开启系统通知</button>'
+     +'<div class="xnote" id="notifyState"></div></div>';
+  }
+  x+='<div class="xcard"><h3>治理看板</h3>'
+   +'<div class="xnote">配置仪表 / 因子信号 / 新闻事件 / 推演假设 / 观察清单 / 审计留痕</div>'
+   +'<a class="xbtn" href="board.html">打开治理看板 →</a></div>';
+  app.innerHTML+=x;
+}
+function askNotify(){
+  const el=document.getElementById('notifyState');
+  if(!('Notification' in window)){ if(el) el.textContent='本环境不支持通知 API'; return; }
+  Notification.requestPermission().then(function(p){
+    if(el) el.textContent='通知权限：'+p;
+    if(p==='granted'){
+      const q=(window.__extrasData||{}).notifications||{};
+      ((q.items)||[]).filter(function(v){return v.level==='urgent'}).forEach(function(v,i){
+        setTimeout(function(){ try{ new Notification('【紧急】'+v.title,{body:v.body,tag:v.id}); }catch(e){} }, i*800);
+      });
+    }
+  });
+}
 </script>
 </body>
 </html>

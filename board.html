@@ -50,9 +50,14 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
   td:first-child{font-size:13px}
   .kv{grid-template-columns:88px 1fr}
 }
+.freshbar{position:sticky;top:0;z-index:20;margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.freshbar.ok{background:#12301f;border:1px solid #1d4b3a;color:#3ddc97}
+.freshbar.warn{background:#33290f;border:1px solid #4b3d1d;color:#ffb340}
+.freshbar.bad{background:#3a1717;border:1px solid #4b1d1d;color:#ff5c5c}
 </style>
 </head>
 <body>
+<div id="freshbar" class="freshbar" hidden></div>
 <header>
   <h1>治理看板 <small id="ver">—</small></h1>
   <div class="meta" id="gen">加载中…</div>
@@ -193,6 +198,72 @@ function renderChain(d){
 }
 
 
+
+// ── 移动端三件：时效横幅 / 国家队 / 通知（2026-11-03）──
+function updateFreshnessBanner(d){
+  const f = d._freshness; const el = document.getElementById('freshbar');
+  if(!el) return;
+  if(!f){ el.className='freshbar warn'; el.textContent='⚠ 无时效信息（数据可能过期）'; el.hidden=false; return; }
+  el.hidden = false;
+  if(f.worst==='critical'){ el.className='freshbar bad'; }
+  else if(f.worst==='stale'){ el.className='freshbar warn'; }
+  else { el.className='freshbar ok'; }
+  let txt = f.worst==='critical' ? '⚠ ' : (f.worst==='stale' ? '△ ' : '✓ ');
+  txt += f.banner;
+  const h = (f.items||[]).find(x=>x.id==='holdings');
+  if(h && h.asOf) txt += '　（持仓 ' + h.asOf + (h.ageDays!=null?' / '+h.ageDays+'天':'') + '）';
+  el.textContent = txt;
+}
+
+function renderNationalTeam(d){
+  const n = d.nationalTeam; if(!n) return '';
+  if(!n.ok){
+    return card('国家队动向','未接入', '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
+      + '<div class="dim" style="font-size:11px">源：166.88.14.220:38657（朋友提供）。失败时明确报错，不显示旧数。</div>');
+  }
+  const s = n.summary||{}; const items = n.items||[];
+  let h = card('国家队动向','F2-补 宽基净申购', '<div class="kv">'
+    + '<div>采集正常</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
+    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
+    + '<div>共监控</div><div><b>'+(s.total||0)+'</b> 只 <span class="dim">增 '+(s.up||0)+' / 减 '+(s.down||0)+'</span></div></div>'
+    + '<table style="margin-top:8px"><thead><tr><th>ETF</th><th style="text-align:right">份额变化</th><th style="text-align:right">%</th></tr></thead><tbody>'
+    + items.slice(0,6).map(x=>'<tr><td>'+esc(x.name||x.code)+'<div class="dim" style="font-size:10px">'+esc(x.code)+'</div></td>'
+        + '<td class="num '+(x.deltaShares>0?'ok':'bad')+'">'+(x.deltaShares>0?'+':'')+(x.deltaWan!=null?x.deltaWan:'?')+' 万份</td>'
+        + '<td class="num">'+(x.deltaPct>0?'+':'')+x.deltaPct+'%</td></tr>').join('')
+    + '</tbody></table>'
+    + '<div class="dim" style="font-size:11px;margin-top:6px">'+esc(n.discipline||'')+'</div>');
+  return h;
+}
+
+function renderNotifications(d){
+  const q = d.notifications; if(!q) return '';
+  const lv = q.byLevel||{}; const items = q.items||[];
+  const cls = {urgent:'bad', watch:'warn', info:'ok'};
+  const cn = {urgent:'紧急', watch:'观察', info:'信息'};
+  let h = card('通知', (q.count||0)+' 条', '<div class="kv">'
+    + '<div>分级</div><div><span class="pill bad">紧急 '+(lv.urgent||0)+'</span> <span class="pill warn">观察 '+(lv.watch||0)+'</span> <span class="pill">信息 '+(lv.info||0)+'</span></div>'
+    + '<div>策略</div><div class="dim">'+esc(q.policy||'')+'</div></div>'
+    + (items.length? items.map(x=>'<div style="border-left:3px solid var(--line);padding-left:10px;margin-top:8px">'
+        + '<div><span class="pill '+(cls[x.level]||'')+'">'+esc(cn[x.level]||x.level)+'</span> <b>'+esc(x.title)+'</b></div>'
+        + '<div class="dim" style="font-size:11px">'+esc(x.body||'')+'</div></div>').join('') : '<div class="dim">当前无通知</div>')
+    + '<button class="reload" style="margin-top:10px" onclick="askNotify()">开启系统通知</button>'
+    + '<div class="dim" style="font-size:11px;margin-top:6px" id="notifyState"></div>');
+  return h;
+}
+
+function askNotify(){
+  const el=document.getElementById('notifyState');
+  if(!('Notification' in window)){ if(el) el.textContent='本环境不支持通知 API'; return; }
+  Notification.requestPermission().then(p=>{
+    if(el) el.textContent = '通知权限：'+p;
+    if(p==='granted'){
+      const q=(window.__boardData||{}).notifications||{};
+      const urgent=(q.items||[]).filter(x=>x.level==='urgent');
+      urgent.forEach((x,i)=>setTimeout(()=>{ try{ new Notification('【紧急】'+x.title,{body:x.body,tag:x.id}); }catch(e){} }, i*800));
+    }
+  });
+}
+
 // ── 今日简报（阶段 1 核心）──
 function st(v){ return v?'<span class="ok">正常</span>':'<span class="bad">过期</span>'; }
 function pct(v){ return v==null?'—':(Number(v).toFixed(2)+'%'); }
@@ -234,6 +305,7 @@ function renderToday(d){
   h += card('④ 数据新鲜度','每格可判定', '<table><thead><tr><th>数据</th><th>时点</th><th>状态</th></tr></thead><tbody>'
     + fr.map(function(x){ return '<tr><td>'+esc(x.item)+'</td><td class="dim">'+esc(x.asOf||'—')+(x.ageDays!=null?' · '+x.ageDays+'天':'')+'</td><td>'+st(!x.stale)+'</td></tr>'; }).join('')
     + '</tbody></table>');
+  h += renderNationalTeam(d) + renderNotifications(d);
   $('#s-today').innerHTML = h;
 }
 
@@ -322,6 +394,7 @@ async function load(){
     $('#ver').textContent = d.schema || 'board/v1';
     $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
     $('#src').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
+    window.__boardData = d; updateFreshnessBanner(d);
     renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d); renderWatch(d); renderSettings(d);
   }catch(e){
     $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '（点右下角刷新重试）</span>';

@@ -54,6 +54,11 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
 .freshbar.ok{background:#12301f;border:1px solid #1d4b3a;color:#3ddc97}
 .freshbar.warn{background:#33290f;border:1px solid #4b3d1d;color:#ffb340}
 .freshbar.bad{background:#3a1717;border:1px solid #4b1d1d;color:#ff5c5c}
+.installbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#0f1b2b;border:1px solid #1e3a5f;
+  border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12.5px}
+.installbar button{background:var(--acc);border:0;color:#04101f;font-weight:600;border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer}
+.installbar button:disabled{background:#1e2a3a;color:var(--dim);cursor:default}
+.installbar .dim{font-size:11px}
 </style>
 </head>
 <body>
@@ -71,6 +76,7 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
   <button data-t="chain">推演假设</button>
   <button data-t="watch">观察清单</button>
   <button data-t="audit">审计留痕</button>
+  <button data-t="nt">国家队</button>
   <button data-t="settings">设置</button>
 </nav>
 
@@ -82,6 +88,7 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
   <section id="s-chain" hidden></section>
   <section id="s-audit" hidden></section>
   <section id="s-watch" hidden></section>
+  <section id="s-nt" hidden></section>
   <section id="s-settings" hidden></section>
 </main>
 
@@ -235,9 +242,54 @@ function renderNationalTeam(d){
   return h;
 }
 
+// ── 国家队独立页（第 9 个 tab，比今日卡更详细）──
+function renderNationalTeamPage(d){
+  const n = d.nationalTeam;
+  const el = $('#s-nt');
+  if(!n){
+    el.innerHTML = card('国家队动向','未接入','<div class="err">board.json 里没有 nationalTeam 段。</div>');
+    return;
+  }
+  if(!n.ok){
+    el.innerHTML = card('国家队动向','采集失败',
+        '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
+      + '<div class="dim" style="font-size:12px;margin-top:8px">失败时<strong>不显示旧数</strong>，避免把过期份额变化当成今天的信号。</div>'
+      + '<div class="dim" style="font-size:11px;margin-top:6px">源：166.88.14.220:38657（朋友提供）。</div>');
+    return;
+  }
+  const s = n.summary||{};
+  const items = n.items||[];
+  const rows = items.map(function(x){
+    const up = Number(x.deltaShares)>0;
+    const down = Number(x.deltaShares)<0;
+    const cls = up ? 'ok' : (down ? 'bad' : '');
+    const sign = up ? '+' : '';
+    const wan = (x.deltaWan!=null) ? x.deltaWan : (x.deltaShares!=null ? (Number(x.deltaShares)/10000).toFixed(2) : null);
+    const pctTxt = (x.deltaPct!=null) ? ((Number(x.deltaPct)>0?'+':'')+Number(x.deltaPct).toFixed(2)+'%') : '—';
+    return '<tr><td><b>'+esc(x.name||x.code)+'</b></td>'
+      + '<td class="dim">'+esc(x.code||'')+'</td>'
+      + '<td class="num '+cls+'">'+(wan!=null?sign+wan:'—')+'</td>'
+      + '<td class="num '+cls+'">'+pctTxt+'</td></tr>';
+  }).join('');
+  let h = card('国家队动向 · 全量', 'F2-补 宽基净申购',
+      '<div class="kv">'
+    + '<div>采集状态</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
+    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
+    + '<div>汇总</div><div>共 '+esc(s.total!=null?s.total:items.length)+' 只　'
+      + '<span class="ok">增 '+esc(s.up||0)+'</span> / '
+      + '<span class="bad">减 '+esc(s.down||0)+'</span>'
+      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':'')+'</div></div>');
+  h += card('ETF 明细', items.length+' 只',
+      '<table><thead><tr><th>ETF名</th><th>代码</th><th style="text-align:right">份额变化(万份)</th><th style="text-align:right">变化%</th></tr></thead><tbody>'
+    + (rows || '<tr><td colspan="4" class="err">无明细</td></tr>')
+    + '</tbody></table>');
+  h += card('口径纪律（原文）', '必读', '<div style="font-size:12.5px;white-space:pre-wrap">'+esc(n.discipline||'（board.json 未提供 discipline 字段）')+'</div>'
+    + '<div class="dim" style="font-size:11px;margin-top:8px">净申购 ≠ 国家队买入，属推断。显示口径纪律原文，不做二次解读。</div>');
+  el.innerHTML = h;
+}
+
 function renderNotifications(d){
-  const q = d.notifications; if(!q) return '';
-  const lv = q.byLevel||{}; const items = q.items||[];
+  const q = d.notifications; if(!q) return '';  const lv = q.byLevel||{}; const items = q.items||[];
   const cls = {urgent:'bad', watch:'warn', info:'ok'};
   const cn = {urgent:'紧急', watch:'观察', info:'信息'};
   let h = card('通知', (q.count||0)+' 条', '<div class="kv">'
@@ -325,19 +377,28 @@ function renderWatch(d){
 
 // ── 设置（静态说明，无伪造开关）──
 function renderSettings(d){
-  const h = card('数据源', '只读契约', '<div class="kv">'
-    + '<div>看板数据</div><div>data/board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
+  const meta = window.__boardMeta || {};
+  const srcNow = meta.fromCache ? ('离线缓存 · ' + (meta.src||'')) : (meta.src || '（未加载）');
+  const lastAt = meta.lastSuccessAt || cacheMetaTime();
+  let h = '<div class="installbar" id="installPrompt"></div>';
+  h += card('数据源', '只读契约', '<div class="kv">'
+    + '<div>当前数据源</div><div><b>'+esc(srcNow)+'</b>'
+      + (meta.fromCache?' <span class="pill warn">离线/缓存</span>':' <span class="pill ok">在线</span>')+'</div>'
+    + '<div>降级顺序</div><div>① ./data/board.json（Pages 自托管）→ ② raw.githubusercontent.com → ③ localStorage 上次成功数据</div>'
+    + '<div>上次成功时间</div><div>'+esc(lastAt||'无（从未成功加载）')+'</div>'
+    + '<div>看板数据</div><div>board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
     + '<div>口径根</div><div>investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）</div>'
     + '<div>刷新</div><div>PC 侧重跑 export-board.ps1 后推送；本页每次打开取最新（带 cache-bust）</div>'
-    + '<div>离线</div><div class="dim">无离线缓存；断网时显示读取失败</div></div>')
+    + '<div>离线</div><div class="dim">Service Worker 缓存 board.json（stale-while-revalidate）+ localStorage 兜底；断网时显示上次数据并标注「离线模式 · 数据时点」</div></div>')
   + card('脱敏规则', '硬约束', '<div class="kv">'
     + '<div>不进公开页</div><div>持仓名称、成本价、amountCny（决策金额）</div>'
     + '<div>原因</div><div>2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史</div>'
     + '<div>金额在哪</div><div>只在本机 _audit\\decisions\\decisions.jsonl</div></div>')
   + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端还不能直接按「确认」——需要阶段 3 的写入 API</div>'
     + '<div class="err">② 持仓快照过期，简报里仓位是推算值不是实时真值</div>'
-    + '<div class="err">③ 无推送通知（阶段 2）</div>');
+    + '<div class="err">③ 系统推送通知依赖 Notification API，部分浏览器/环境不支持</div>');
   $('#s-settings').innerHTML = h;
+  renderInstallPrompt();
 }
 
 // ── 审计时间线（人工确认留痕）──
@@ -366,53 +427,196 @@ function renderAudit(d){
   $('#s-audit').innerHTML = h;
 }
 // ── 加载 ──
-// board.json 不再随 Pages 发布（每次推 Pages 都触发整站重建，构建窗口内会 404）。
-// 现在主源是公开数据仓库（raw，带 CORS），同目录只作本机开发兜底；失败自动重试一轮。
-const BOARD_SOURCES = [
-  'data/board.json',
-  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json'
-];
-async function fetchBoard(){
-  let lastErr = null;
-  for (let attempt = 0; attempt < 2; attempt++){
-    for (const u of BOARD_SOURCES){
-      try{
-        const r = await fetch(u + '?_=' + Date.now(), {cache:'no-store'});
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        return { d: await r.json(), src: u };
-      }catch(e){ lastErr = e; }
-    }
-    if (attempt === 0) await new Promise(res => setTimeout(res, 1200));
-  }
-  throw lastErr || new Error('所有数据源都失败');
+// 三源降级（先到先得，每个带 ?_=Date.now() 破缓存）：
+//   1) ./data/board.json  同域 Pages 自托管，40 秒内刷新（绕开 CDN 滞后）
+//   2) raw.githubusercontent.com 公开仓库兜底
+//   3) localStorage 上次成功数据（离线可读）
+// 全部失败 → 显示错误 + 「上次成功时间」，绝不显示成 0 或空成功。
+const BOARD_SOURCE_SELF  = './data/board.json';
+const BOARD_SOURCE_RAW   = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
+const BOARD_CACHE_KEY    = 'board.cache.v1';
+const BOARD_CACHE_META   = 'board.cache.meta.v1';
+
+function readCache(){
+  try{
+    const rawTxt = localStorage.getItem(BOARD_CACHE_KEY);
+    if(!rawTxt) return null;
+    const parsed = JSON.parse(rawTxt);
+    if(!parsed || !parsed.schema) return null;
+    let meta = null;
+    try{ meta = JSON.parse(localStorage.getItem(BOARD_CACHE_META) || 'null'); }catch(e){ meta = null; }
+    return { d: parsed, src: (meta && meta.src) || 'localStorage 缓存', cachedAt: (meta && meta.at) || null };
+  }catch(e){ return null; }
 }
+function writeCache(d, src){
+  try{
+    localStorage.setItem(BOARD_CACHE_KEY, JSON.stringify(d));
+    localStorage.setItem(BOARD_CACHE_META, JSON.stringify({ src: src, at: new Date().toISOString(), generatedAt: d.generatedAt || null }));
+  }catch(e){ /* 配额满/隐私模式：静默降级，不影响在线取数 */ }
+}
+function cacheMetaTime(){
+  try{
+    const meta = JSON.parse(localStorage.getItem(BOARD_CACHE_META) || 'null');
+    if(meta && meta.at) return meta.at;
+  }catch(e){}
+  return null;
+}
+
+async function fetchOne(url){
+  const r = await fetch(url + (url.indexOf('?')>=0 ? '&' : '?') + '_=' + Date.now(), {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  if(!j || typeof j !== 'object') throw new Error('响应不是 JSON 对象');
+  return j;
+}
+
+// 主取数：按顺序尝试 前两源；失败再落到 localStorage 缓存。
+// 返回 { d, src, fromCache, lastSuccessAt, errors }
+async function fetchBoard(){
+  const errors = [];
+  const candidates = [BOARD_SOURCE_SELF, BOARD_SOURCE_RAW];
+  for (const u of candidates){
+    try{
+      const d = await fetchOne(u);
+      writeCache(d, u);
+      return { d: d, src: u, fromCache: false, lastSuccessAt: new Date().toISOString(), errors: errors };
+    }catch(e){
+      errors.push(u + ' → ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+  const cached = readCache();
+  if(cached){
+    return { d: cached.d, src: cached.src, fromCache: true,
+             lastSuccessAt: cached.cachedAt || cacheMetaTime(), errors: errors };
+  }
+  return { d: null, src: null, fromCache: false, lastSuccessAt: cacheMetaTime(), errors: errors };
+}
+
+let LAST_LOAD_ERRORS = [];
 async function load(){
   $('#gen').textContent = '加载 board.json …';
   try{
     const got = await fetchBoard();
+    LAST_LOAD_ERRORS = got.errors || [];
+    if(!got.d){
+      const lastTxt = got.lastSuccessAt
+        ? ('上次成功时间：' + got.lastSuccessAt)
+        : '上次成功时间：无（此前从未成功加载过）';
+      $('#gen').innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>'
+        + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>'
+        + '<div class="dim" style="font-size:11px">失败明细：' + esc((LAST_LOAD_ERRORS.join(' | ')) || '未知') + '</div>'
+        + '<div class="dim" style="font-size:11px">点右下角刷新重试。</div>';
+      $('#src').textContent = 'board.json · 读取失败';
+      return;
+    }
     const d = got.d;
     $('#ver').textContent = d.schema || 'board/v1';
-    $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
+    const srcLabel = got.fromCache ? ('离线缓存 · ' + got.src) : got.src;
+    $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;
     $('#src').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
-    window.__boardData = d; updateFreshnessBanner(d);
-    renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d); renderWatch(d); renderSettings(d);
+    window.__boardData = d;
+    window.__boardMeta = got;
+    updateFreshnessBanner(d);
+    if(got.fromCache){
+      const bar = document.getElementById('freshbar');
+      if(bar){
+        bar.hidden = false;
+        bar.className = 'freshbar warn';
+        bar.textContent = '离线模式 · 数据时点 ' + (d.generatedAt || '未知');
+      }
+    }
+    renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
+    renderAudit(d); renderWatch(d); renderNationalTeamPage(d); renderSettings(d);
   }catch(e){
-    $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '（点右下角刷新重试）</span>';
+    const lastTxt = cacheMetaTime() ? ('上次成功时间：' + cacheMetaTime()) : '上次成功时间：无（此前从未成功加载过）';
+    $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
+      + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>';
   }
 }
 
+const TAB_KEYS = ['today','ips','factor','news','chain','watch','audit','nt','settings'];
 $('#tabs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
-  ['today','ips','factor','news','chain','watch','audit','settings'].forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
+  TAB_KEYS.forEach(t=>{ $('#s-'+t).hidden = (t!==b.dataset.t); });
 });
 function showTab(t){
-  if(!t) t='today';
+  if(!t || TAB_KEYS.indexOf(t)<0) t='today';
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x.dataset.t===t));
-  ['today','ips','factor','news','chain','watch','audit','settings'].forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
+  TAB_KEYS.forEach(k=>{ $('#s-'+k).hidden = (k!==t); });
 }
 window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
 load().then(()=>showTab(location.hash.slice(1)));
+
+// ── Service Worker：board.json 离线只读缓存（stale-while-revalidate）──
+// 用 Blob URL 内联注册，避免多出一个 sw.js 文件；file:// 或受限环境失败时静默降级（localStorage 兜底）。
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  if(location.protocol !== 'https:') return;          // file:// 下 SW 不可用，静默跳过
+  const swSource = [
+    "const CACHE='board-sw-v1';",
+    "self.addEventListener('install',e=>{self.skipWaiting();});",
+    "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))).then(()=>self.clients.claim()));});",
+    "self.addEventListener('fetch',e=>{",
+    "  const req=e.request;",
+    "  if(req.method!=='GET') return;",
+    "  const url=new URL(req.url);",
+    "  const sameOrigin=url.origin===self.location.origin;",
+    "  const isBoard=sameOrigin && /(^|\\/)data\\/board\\.json(\\?|$)/.test(url.pathname+url.search);",
+    "  const isRaw=url.host==='raw.githubusercontent.com' && /finhub-data\\/main\\/board\\.json/.test(url.pathname);",
+    "  if(!isBoard && !isRaw) return;",
+    "  e.respondWith(caches.open(CACHE).then(cache=>cache.match(req).then(hit=>{",
+    "    const net=fetch(req).then(res=>{",
+    "      if(res && res.ok) { const copy=res.clone(); cache.put(req,copy); }",
+    "      return res;",
+    "    }).catch(()=>hit);",
+    "    return hit || net;",
+    "  })));",
+    "});"
+  ].join('\n');
+  try{
+    const blobUrl = URL.createObjectURL(new Blob([swSource], {type:'text/javascript'}));
+    navigator.serviceWorker.register(blobUrl).catch(()=>{});
+  }catch(e){ /* 静默降级：localStorage 缓存已在 fetchBoard 里兜底 */ }
+}
+try{ registerServiceWorker(); }catch(e){}
+
+// ── PWA 安装提示 ──
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(evt){
+  evt.preventDefault();
+  deferredInstallPrompt = evt;
+  window.__canInstall = true;
+  renderInstallPrompt();
+});
+window.addEventListener('appinstalled', function(){
+  deferredInstallPrompt = null;
+  window.__canInstall = false;
+  renderInstallPrompt();
+});
+function renderInstallPrompt(){
+  const box = document.getElementById('installPrompt');
+  if(!box) return;
+  const canInstall = !!deferredInstallPrompt;
+  box.innerHTML = canInstall
+    ? '<b>把看板装到手机主屏</b><span class="dim">离线也能打开，显示上次数据</span>'
+      + '<button id="installBtn" type="button">添加到主屏</button>'
+    : '<b>添加到主屏</b><span class="dim">Android Chrome：右上角菜单 → 添加到主屏幕；'
+      + 'iOS Safari：分享按钮 → 添加到主屏幕；桌面 Chrome/Edge：地址栏右侧安装图标。</span>';
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.addEventListener('click', promptInstall);
+}
+async function promptInstall(){
+  if(!deferredInstallPrompt) return;
+  const p = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  try{
+    p.prompt();
+    const choice = await p.userChoice;
+    window.__installChoice = choice && choice.outcome;
+  }catch(e){ window.__installChoice = 'error'; }
+  renderInstallPrompt();
+}
 </script>
 </body>
 </html>

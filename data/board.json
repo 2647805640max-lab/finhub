@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 02:16:37",
+    "generatedAt":  "2026-11-04 02:17:43",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 02:16",
+                                        "asOf":  "2026-11-04 02:17",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 02:16:38",
+                       "checkedAt":  "2026-11-04 02:17:44",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 02:16:39",
+                          "generatedAt":  "2026-11-04 02:17:45",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 02:16:39",
+                       "generatedAt":  "2026-11-04 02:17:45",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2070,20 +2070,26 @@
                                             "overall":  "WARN",
                                             "durationMs":  67121,
                                             "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T02:17:42+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  66097,
+                                            "dataAgeMin":  1.1
                                         }
                                     ],
                        "stats":  {
-                                     "total":  11,
+                                     "total":  12,
                                      "ok":  0,
-                                     "warn":  10,
+                                     "warn":  11,
                                      "fail":  1,
-                                     "consecutiveBad":  11,
-                                     "lastRunAt":  "2026-11-04T02:16:30+08:00",
+                                     "consecutiveBad":  12,
+                                     "lastRunAt":  "2026-11-04T02:17:42+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {
                                       "status":  "degraded",
-                                      "reason":  "连续 11 次异常（最近 = WARN）"
+                                      "reason":  "连续 12 次异常（最近 = WARN）"
                                   },
                        "degraded":  [
 

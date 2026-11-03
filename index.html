@@ -766,8 +766,10 @@ function askNotify(){
     try{ localStorage.setItem('finhub.page', page); }catch(e){}
   });
   try{
-    var saved=localStorage.getItem('finhub.page');
-    if(saved==='gov'){ var b=document.querySelector('#modebar button[data-page="gov"]'); if(b) b.click(); }
+    var want='';
+    if(/[?&]page=gov/.test(location.search)||location.hash==='#gov') want='gov';
+    else want=localStorage.getItem('finhub.page')||'';
+    if(want==='gov'){ var b=document.querySelector('#modebar button[data-page="gov"]'); if(b) b.click(); }
   }catch(e){}
 })();
 </script>

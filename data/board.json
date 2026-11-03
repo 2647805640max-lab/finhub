@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-03 22:38:26",
+    "generatedAt":  "2026-11-03 22:48:44",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-03 22:38",
+                                        "asOf":  "2026-11-03 22:48",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-03 22:38:27",
+                       "checkedAt":  "2026-11-03 22:48:45",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1745,7 +1745,7 @@
                                          "id":  "chain-rules",
                                          "label":  "推演规则",
                                          "asOf":  "2026-11-02 23:23",
-                                         "ageDays":  0.97,
+                                         "ageDays":  0.98,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1753,7 +1753,7 @@
                                          "id":  "decisions",
                                          "label":  "决策账本",
                                          "asOf":  "2026-11-02 23:43",
-                                         "ageDays":  0.95,
+                                         "ageDays":  0.96,
                                          "maxAgeDays":  7,
                                          "stale":  false
                                      },
@@ -1761,7 +1761,7 @@
                                          "id":  "rules",
                                          "label":  "风控规则",
                                          "asOf":  "2026-11-03 22:26",
-                                         "ageDays":  0.01,
+                                         "ageDays":  0.02,
                                          "maxAgeDays":  14,
                                          "stale":  false
                                      }
@@ -1770,8 +1770,8 @@
                    },
     "nationalTeam":  {
                          "ok":  true,
-                         "lastSuccess":  "2026-11-03 22:30:39",
-                         "asOf":  "2026-11-03 22:30:39",
+                         "lastSuccess":  "2026-11-03 22:45:39",
+                         "asOf":  "2026-11-03 22:45:39",
                          "note":  "",
                          "items":  [
                                        {
@@ -1851,7 +1851,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-03 22:38:30",
+                          "generatedAt":  "2026-11-03 22:48:56",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,

@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-03 23:14:46",
+    "generatedAt":  "2026-11-03 23:17:49",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1596,7 +1596,7 @@
                                         "decidedAt":  "2026-11-02T23:43:30+08:00",
                                         "action":  "note",
                                         "subject":  "P9 现货金 10-30 判定",
-                                        "reason":  "主源 122.XAU 10-30 收 "[金额已移除]" \u003c3950 ⇒ FAIL，已登记更正",
+                                        "reason":  "主源 122.XAU 10-30 收 3875.55 \u003c3950 ⇒ FAIL，已登记更正",
                                         "source":  "cli",
                                         "actor":  "lead",
                                         "dataAsOf":  "2026-10-30",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-03 23:14",
+                                        "asOf":  "2026-11-03 23:17",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-03 23:14:47",
+                       "checkedAt":  "2026-11-03 23:17:50",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1745,7 +1745,7 @@
                                          "id":  "chain-rules",
                                          "label":  "推演规则",
                                          "asOf":  "2026-11-02 23:23",
-                                         "ageDays":  0.99,
+                                         "ageDays":  1,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1761,7 +1761,7 @@
                                          "id":  "rules",
                                          "label":  "风控规则",
                                          "asOf":  "2026-11-03 22:26",
-                                         "ageDays":  0.03,
+                                         "ageDays":  0.04,
                                          "maxAgeDays":  14,
                                          "stale":  false
                                      }
@@ -1770,8 +1770,8 @@
                    },
     "nationalTeam":  {
                          "ok":  true,
-                         "lastSuccess":  "2026-11-03 23:00:40",
-                         "asOf":  "2026-11-03 23:00:40",
+                         "lastSuccess":  "2026-11-03 23:15:40",
+                         "asOf":  "2026-11-03 23:15:40",
                          "note":  "",
                          "items":  [
                                        {
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-03 23:15:36",
+                          "generatedAt":  "2026-11-03 23:17:51",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,

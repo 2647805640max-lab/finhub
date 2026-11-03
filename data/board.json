@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 02:14:17",
+    "generatedAt":  "2026-11-04 02:15:23",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 02:14",
+                                        "asOf":  "2026-11-04 02:15",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 02:14:17",
+                       "checkedAt":  "2026-11-04 02:15:24",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1753,7 +1753,7 @@
                                          "id":  "decisions",
                                          "label":  "决策账本",
                                          "asOf":  "2026-11-02 23:43",
-                                         "ageDays":  1.1,
+                                         "ageDays":  1.11,
                                          "maxAgeDays":  7,
                                          "stale":  false
                                      },
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 02:14:19",
+                          "generatedAt":  "2026-11-04 02:15:25",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 02:14:19",
+                       "generatedAt":  "2026-11-04 02:15:25",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2058,20 +2058,26 @@
                                             "overall":  "WARN",
                                             "durationMs":  65231,
                                             "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T02:15:22+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  66845,
+                                            "dataAgeMin":  1.1
                                         }
                                     ],
                        "stats":  {
-                                     "total":  9,
+                                     "total":  10,
                                      "ok":  0,
-                                     "warn":  8,
+                                     "warn":  9,
                                      "fail":  1,
-                                     "consecutiveBad":  9,
-                                     "lastRunAt":  "2026-11-04T01:45:09+08:00",
+                                     "consecutiveBad":  10,
+                                     "lastRunAt":  "2026-11-04T02:15:22+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {
                                       "status":  "degraded",
-                                      "reason":  "连续 9 次异常（最近 = WARN）"
+                                      "reason":  "连续 10 次异常（最近 = WARN）"
                                   },
                        "degraded":  [
 

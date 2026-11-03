@@ -294,18 +294,37 @@ function renderAudit(d){
   $('#s-audit').innerHTML = h;
 }
 // ── 加载 ──
+// board.json 不再随 Pages 发布（每次推 Pages 都触发整站重建，构建窗口内会 404）。
+// 现在主源是公开数据仓库（raw，带 CORS），同目录只作本机开发兜底；失败自动重试一轮。
+const BOARD_SOURCES = [
+  'data/board.json',
+  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json'
+];
+async function fetchBoard(){
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++){
+    for (const u of BOARD_SOURCES){
+      try{
+        const r = await fetch(u + '?_=' + Date.now(), {cache:'no-store'});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return { d: await r.json(), src: u };
+      }catch(e){ lastErr = e; }
+    }
+    if (attempt === 0) await new Promise(res => setTimeout(res, 1200));
+  }
+  throw lastErr || new Error('所有数据源都失败');
+}
 async function load(){
-  $('#gen').textContent = '加载 data/board.json …';
+  $('#gen').textContent = '加载 board.json …';
   try{
-    const r = await fetch('data/board.json?_=' + Date.now(), {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d = await r.json();
+    const got = await fetchBoard();
+    const d = got.d;
     $('#ver').textContent = d.schema || 'board/v1';
     $('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：contracts/*.json';
-    $('#src').textContent = 'data/board.json · ' + ((d.generatedAt||'').slice(0,16));
+    $('#src').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
     renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d); renderAudit(d); renderWatch(d); renderSettings(d);
   }catch(e){
-    $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>';
+    $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '（点右下角刷新重试）</span>';
   }
 }
 

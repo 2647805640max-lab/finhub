@@ -210,6 +210,9 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   #page-gov td.num{text-align:left}
   #page-gov td:first-child{font-size:13px}
 }
+
+/* ── 双横幅修复：治理页内部横幅隐藏，只保留顶部 #freshbar ── */
+#page-gov #govfreshbar, #govfreshbar{ display:none !important; }
 </style>
 </head>
 <body>
@@ -1449,6 +1452,7 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
       btn.classList.toggle('on', btn.dataset.page===mode);
     });
     if(mode==='gov' && window.GOV && window.GOV.showTab) window.GOV.showTab(currentGovTab);
+    try{ window.scrollTo(0,0); }catch(scrollErr){}
     window.__fhMode=mode;
   }
   document.getElementById('modebar').addEventListener('click', function(ev){

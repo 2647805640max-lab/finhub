@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 00:09:04",
+    "generatedAt":  "2026-11-04 00:14:01",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 00:09",
+                                        "asOf":  "2026-11-04 00:14",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 00:09:04",
+                       "checkedAt":  "2026-11-04 00:14:02",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1745,7 +1745,7 @@
                                          "id":  "chain-rules",
                                          "label":  "推演规则",
                                          "asOf":  "2026-11-02 23:23",
-                                         "ageDays":  1.03,
+                                         "ageDays":  1.04,
                                          "maxAgeDays":  30,
                                          "stale":  false
                                      },
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 00:09:17",
+                          "generatedAt":  "2026-11-04 00:14:04",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 00:09:17",
+                       "generatedAt":  "2026-11-04 00:14:04",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2000,8 +2000,16 @@
                                              "title":  "数据实时性流水线",
                                              "kind":  "every",
                                              "everySeconds":  1800,
+                                             "scheduledAt":  "2026-11-03T16:43:56.989Z",
+                                             "nextRunAt":  "2026-11-04 00:43:56"
+                                         },
+                                         {
+                                             "id":  "",
+                                             "title":  "",
+                                             "kind":  "",
+                                             "everySeconds":  null,
                                              "scheduledAt":  "2026-11-03T16:13:56.989Z",
-                                             "nextRunAt":  "2026-11-04 00:13:56"
+                                             "nextRunAt":  null
                                          }
                                      ],
                        "lastRuns":  [

@@ -155,13 +155,61 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .xcard h3{margin:0 0 8px;font-size:14px;color:#e6edf5}
 .xnote{color:#7c8899;font-size:11px;line-height:1.5;margin-top:8px}
 .xbtn{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px;border:0}
-#modebar{display:flex;gap:8px;margin:0 0 10px}
-#modebar button{flex:1;padding:9px 0;border-radius:10px;border:1px solid #1c2430;background:#0f151d;color:#8fa0b5;font-size:13px;cursor:pointer}
-#modebar button.on{background:#1d4ed8;border-color:#2563eb;color:#fff;font-weight:600}
-#page-gov{display:none}
-#page-gov.on{display:block}
-#page-live.off{display:none}
-#govframe{width:100%;height:calc(100vh - 96px);border:0;border-radius:12px;background:#0b1016}
+
+/* ── 单页模式切换（实时 / 治理）── */
+#modebar{display:flex;gap:6px;margin:0 0 10px;padding:0 2px}
+#modebar button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
+  padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer}
+#modebar button.on{background:var(--acc);border-color:var(--acc);color:#04101f}
+
+/* ── 治理看板（board.html 合并进来的独有样式，全部限定在 #page-gov 内）── */
+#page-gov{padding:4px 2px 8px}
+#page-gov header{position:static;display:block;background:none;padding:12px 4px 8px}
+#page-gov h1{font-size:16px;margin:0;display:flex;align-items:center;gap:8px}
+#page-gov h1 small{font-weight:400;color:var(--dim);font-size:11px}
+#page-gov .meta{color:var(--dim);font-size:11px;margin-top:4px}
+#page-gov nav{display:flex;gap:6px;overflow-x:auto;padding:10px 0 0;-webkit-overflow-scrolling:touch}
+#page-gov nav button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
+  padding:6px 12px;border-radius:999px;font-size:12px;cursor:pointer;white-space:nowrap}
+#page-gov nav button.on{background:var(--acc);border-color:var(--acc);color:#04101f;font-weight:600}
+#page-gov .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:12.5px}
+#page-gov .kv div:nth-child(odd){color:var(--dim)}
+#page-gov .hops{border-left:2px solid var(--line);margin-left:6px;padding-left:12px}
+#page-gov .hop{margin-bottom:10px;position:relative}
+#page-gov .hop::before{content:"";position:absolute;left:-17px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+#page-gov .hop b{font-size:12.5px}
+#page-gov .bar{display:block;height:6px;background:#0b1220;border-radius:3px;overflow:hidden;margin-top:4px}
+#page-gov .bar>i{display:block;height:100%;background:var(--acc)}
+#page-gov .ok{color:var(--ok)}
+#page-gov .warn{color:var(--warn)}
+#page-gov .bad{color:var(--bad)}
+#page-gov .dim{color:var(--dim)}
+#page-gov .num{text-align:right;font-variant-numeric:tabular-nums}
+#page-gov .pill{border:1px solid var(--line);border-radius:4px;margin:0 4px 0 0;vertical-align:baseline}
+#page-gov .pill.ok{color:var(--ok);border-color:#1d4b3a}
+#page-gov .pill.warn{color:var(--warn);border-color:#4b3d1d}
+#page-gov .pill.bad{color:var(--bad);border-color:#4b1d1d}
+#page-gov .card{overflow-wrap:anywhere}
+#page-gov th{color:var(--dim);font-weight:500;font-size:11px}
+#page-gov td{padding:7px 6px;text-align:left}
+#page-gov .err{color:var(--bad)}
+#page-gov .installbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#0f1b2b;border:1px solid #1e3a5f;
+  border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12.5px}
+#page-gov .installbar button{background:var(--acc);border:0;color:#04101f;font-weight:600;border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer}
+#page-gov .installbar button:disabled{background:#1e2a3a;color:var(--dim);cursor:default}
+#page-gov .installbar .dim{font-size:11px}
+#page-gov .reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}
+#page-gov .govfoot{display:flex;gap:10px;justify-content:space-between;align-items:center;
+  margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
+@media (max-width:560px){
+  #page-gov .kv{grid-template-columns:88px 1fr}
+  #page-gov table,#page-gov thead,#page-gov tbody,#page-gov tr,#page-gov td,#page-gov th{display:block;width:auto}
+  #page-gov thead{display:none}
+  #page-gov tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#0d141e}
+  #page-gov td{border:0;padding:3px 0}
+  #page-gov td.num{text-align:left}
+  #page-gov td:first-child{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -175,15 +223,45 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <button data-page="live" class="on">实时</button>
     <button data-page="gov">治理</button>
   </nav>
-  <div id="page-gov"><iframe id="govframe" src="board.html" loading="lazy"></iframe></div>
   <div id="page-live">
-  <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
+    <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
+  </div>
+  <div id="page-gov" hidden>
+    <div id="govfreshbar" class="freshbar" hidden></div>
+    <header>
+      <h1>治理看板 <small id="govVer">—</small></h1>
+      <div class="meta" id="govGen">等待 board.json …</div>
+    </header>
+    <nav id="govnav">
+      <button data-t="today" class="on">今日简报</button>
+      <button data-t="ips">配置仪表</button>
+      <button data-t="factor">因子信号</button>
+      <button data-t="news">新闻事件</button>
+      <button data-t="chain">推演假设</button>
+      <button data-t="watch">观察清单</button>
+      <button data-t="audit">审计留痕</button>
+      <button data-t="nt">国家队</button>
+      <button data-t="settings">设置</button>
+    </nav>
+    <section id="s-today"></section>
+    <section id="s-ips" hidden></section>
+    <section id="s-factor" hidden></section>
+    <section id="s-news" hidden></section>
+    <section id="s-chain" hidden></section>
+    <section id="s-audit" hidden></section>
+    <section id="s-watch" hidden></section>
+    <section id="s-nt" hidden></section>
+    <section id="s-settings" hidden></section>
+    <div class="govfoot">
+      <span id="govSrc">board.json（由 index-remote 的 loadExtras 注入）</span>
+      <button class="reload" id="govReloadBtn">刷新</button>
+    </div>
   </div>
 </div>
 <script>
-const $=s=>document.querySelector(s);
+const pick=s=>document.querySelector(s);
 const cls=v=>v>0?'up':(v<0?'dn':'fl');
-const sg=v=>(v>0?'+':'')+v.toFixed(2)+'%';
+const signedPct=v=>(v>0?'+':'')+v.toFixed(2)+'%';
 const num=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
 
 /* 基线数据源：jsDelivr 的 @main 会在推送后很快刷新，raw.githubusercontent 的 main 分支
@@ -237,7 +315,7 @@ async function load(){
     try{ base=await jget(u); break; }catch(e){ err=e; }
   }
   if(!base){
-    $('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
+    pick('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
     return;
   }
   /* 2) 有隧道地址就直连拿实时（不走 CDN 缓存）
@@ -294,17 +372,17 @@ function render(s){
   /* 日频信号卡：一天一版，因子按收盘算，盘中不重算 */
   const dsv=s.daily_signal||{};
   if(dsv.signal){
-    const sg=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
-    const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[sg.action]||'wait';
-    const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[sg.action]||sg.action;
+    const dailySig=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
+    const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[dailySig.action]||'wait';
+    const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[dailySig.action]||dailySig.action;
     const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
     h+=`<div class="card">
       <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · ${(dsv.builtAt||'').slice(11,16)}</span></h2>
       <div class="hero">
         <div class="badge ${dcls}">${dcn}</div>
         <div class="meta">
-          <div class="stage">${sg.stage||'—'} <span class="pill">机会 ${sg.opportunity??'—'} / 风险 ${sg.risk??'—'}</span></div>
-          <div class="adv">信心 ${sg.confidence||'—'}${fz.incomplete?' · <span style="color:var(--warn)">数据缺口已降档</span>':''}</div>
+          <div class="stage">${dailySig.stage||'—'} <span class="pill">机会 ${dailySig.opportunity??'—'} / 风险 ${dailySig.risk??'—'}</span></div>
+          <div class="adv">信心 ${dailySig.confidence||'—'}${fz.incomplete?' · <span style="color:var(--warn)">数据缺口已降档</span>':''}</div>
         </div>
       </div>
       <div class="bars">
@@ -416,10 +494,10 @@ function render(s){
   h+=`<div class="card">
     <h2>盘中观测 <span class="tag">非判定口径</span></h2>
     <div class="grid">
-      ${q('Brent 近月 Jan-2027',oil.price,oil.chgPct)}
-      ${q('WTI Dec-2026',cl.price,cl.chgPct)}
-      ${q('伦敦金现货',xau.price,xau.chgPct)}
-      ${q('黄金ETF',(m.watch||[]).find(w=>w.code==='sh518880')?.price,(m.watch||[]).find(w=>w.code==='sh518880')?.chgPct)}
+      ${quadCell('Brent 近月 Jan-2027',oil.price,oil.chgPct)}
+      ${quadCell('WTI Dec-2026',cl.price,cl.chgPct)}
+      ${quadCell('伦敦金现货',xau.price,xau.chgPct)}
+      ${quadCell('黄金ETF',(m.watch||[]).find(w=>w.code==='sh518880')?.price,(m.watch||[]).find(w=>w.code==='sh518880')?.chgPct)}
     </div>
   </div>`;
 
@@ -430,7 +508,7 @@ function render(s){
     ex.items.forEach(r=>{
       h+=`<div class="q"><div class="n">${r.name}</div>
         <div class="p">${r.kind==='fut'?num(r.price,0):num(r.price,2)}</div>
-        <div class="c ${cls(r.chgPct)}">${r.chgPct==null?'—':sg(r.chgPct)}</div>
+        <div class="c ${cls(r.chgPct)}">${r.chgPct==null?'—':signedPct(r.chgPct)}</div>
         ${r.asof?`<div class="d">${r.asof}</div>`:''}</div>`;
     });
     h+=`</div><div class="note">指数取海外源（Yahoo，含 KOSPI）最近价；碳酸锂·玻璃·豆粕为主力连续，按昨结算算涨跌。这些只有「一起动」的历史，没有稳定传导机制，所以只进评分、不投票。</div></div>`;
@@ -461,7 +539,7 @@ function render(s){
   h+=`<div class="card"><h2>四大指数 <span class="tag">实时</span></h2><table>`;
   (m.indices||[]).forEach(i=>{
     h+=`<tr><td>${i.name}</td><td class="r">${num(i.price,2)}</td>
-        <td class="r ${cls(i.chgPct)}">${sg(i.chgPct)}</td></tr>`;
+        <td class="r ${cls(i.chgPct)}">${signedPct(i.chgPct)}</td></tr>`;
   });
   h+=`</table></div>`;
 
@@ -470,7 +548,7 @@ function render(s){
   (m.watch||[]).forEach(w=>{
     h+=`<tr><td>${w.name}<span class="pill">${w.code.replace('sh','').replace('sd','')}</span></td>
         <td class="r">${num(w.price,3)}</td>
-        <td class="r ${cls(w.chgPct)}">${sg(w.chgPct)}</td></tr>`;
+        <td class="r ${cls(w.chgPct)}">${signedPct(w.chgPct)}</td></tr>`;
   });
   h+=`</table></div>`;
 
@@ -505,7 +583,7 @@ function render(s){
     h+=`<h2 style="margin-top:14px">Top 持仓 <span class="tag">共 ${hd.nPositions||(hd.positions||[]).length||0} 只</span></h2><table>`;
     (hd.positions||[]).slice(0,8).forEach(p=>{
       h+=`<tr><td>${p.name}</td><td class="r">${num(p.mv,0)}</td>
-          <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':sg(p.pnlPct)}</td></tr>`;
+          <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':signedPct(p.pnlPct)}</td></tr>`;
     });
     h+=`</table><div class="note">市值/成本来自 finwatch 最新快照（非实时净值）。盈亏仅统计有成本记录的持仓${hd.costCoveragePct!=null?`（覆盖市值 ${hd.costCoveragePct}%）`:''}。</div></div>`;
   }
@@ -592,8 +670,8 @@ function render(s){
     h+=`<div class="note">这些记录只写 VPS 的 audit.jsonl（需口令可读），不进公开仓库。用来看「当时怎么判的、后来对没对」——推演命中率以后就从这里算。</div></div>`;
   }
 
-  $('#app').innerHTML=h;
-  $('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
+  pick('#app').innerHTML=h;
+  pick('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
   document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
 function bar(lab,v,max,col){
@@ -602,10 +680,10 @@ function bar(lab,v,max,col){
     <span class="track"><i class="fill" style="width:${pct}%;background:${col}"></i></span>
     <span class="val">${v==null?'—':v.toFixed(1)}</span></div>`;
 }
-function q(n,p,c){
+function quadCell(n,p,c){
   return `<div class="q"><div class="n">${n}</div>
     <div class="p">${p==null?'—':Number(p).toFixed(2)}</div>
-    <div class="c ${cls(c)}">${c==null?'—':sg(c)}</div></div>`;
+    <div class="c ${cls(c)}">${c==null?'—':signedPct(c)}</div></div>`;
 }
 /* 人工确认按钮：只在个人层解锁后可用（写 VPS 审计日志需要口令） */
 function actBtns(item,ref){
@@ -654,15 +732,15 @@ document.addEventListener('click',ev=>{
 document.addEventListener('click',ev=>{
   const kb=ev.target.closest?ev.target.closest('#kbtn'):null;
   if(!kb) return;
-  const el=$('#kin'), v=(el&&el.value||'').trim();
-  if(!v){ $('#kmsg').textContent='请输入口令'; return; }
+  const el=pick('#kin'), v=(el&&el.value||'').trim();
+  if(!v){ pick('#kmsg').textContent='请输入口令'; return; }
   localStorage.setItem(KEY_STORE,v);
-  $('#kmsg').textContent='验证中…';
+  pick('#kmsg').textContent='验证中…';
   load();
 });
 document.addEventListener('keydown',ev=>{
   if(ev.key==='Enter'&&ev.target&&ev.target.id==='kin'){
-    const kb=$('#kbtn'); if(kb) kb.click();
+    const kb=pick('#kbtn'); if(kb) kb.click();
   }
 });
 
@@ -687,6 +765,7 @@ async function loadExtras(){
   }
   window.__extrasData=b;
   renderExtras(b);
+  if(window.GOV) window.GOV.render(b);
 }
 function renderExtras(b){
   const bar=document.getElementById('freshbar');
@@ -750,28 +829,641 @@ function askNotify(){
     }
   });
 }
-/* ── 模式切换：实时 / 治理（iframe 内嵌 board.html，零冲突）── */
+</script>
+<script>
 (function(){
-  var modebar=document.getElementById('modebar');
-  if(!modebar) return;
-  modebar.addEventListener('click',function(ev){
-    var btn=ev.target.closest('button[data-page]');
-    if(!btn) return;
-    var page=btn.getAttribute('data-page');
-    var live=document.getElementById('page-live');
-    var gov=document.getElementById('page-gov');
-    Array.prototype.forEach.call(modebar.querySelectorAll('button'),function(b){ b.classList.toggle('on', b===btn); });
-    if(page==='gov'){ gov.classList.add('on'); live.classList.add('off'); }
-    else { gov.classList.remove('on'); live.classList.remove('off'); }
-    try{ localStorage.setItem('finhub.page', page); }catch(e){}
+"use strict";
+
+const govQuery = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const govNum = n => (n==null||n==='')?'—':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:2});
+
+function card(title, tag, body){ return `<div class="card"><h2>${esc(title)}<span class="tag">${esc(tag||'')}</span></h2>${body}</div>`; }
+
+// ── IPS 五项 ──
+function renderIPS(d){
+  const ips = d.ips || {};
+  const rows = (ips.items||[]).map(it=>{
+    const cls = it.status==='ok'?'ok':(it.status==='gap'?'bad':'warn');
+    return `<tr><td><b>${esc(it.name)}</b><div class="dim" style="font-size:11px">${esc(it.source||'')}</div></td>
+      <td class="num">${esc(it.value==null?'—':it.value)}</td>
+      <td class="${cls}" style="font-size:11px">${esc(it.note||'')}</td></tr>`;
+  }).join('');
+  let h = card('IPS 一页速查', ips.asOf||'', `
+    <table><thead><tr><th>项</th><th style="text-align:right">值</th><th>说明 / 来源</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=3 class="err">contracts 未就绪</td></tr>'}</tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">${esc(ips.footer||'')}</div>`);
+  if (ips.alerts && ips.alerts.length){
+    h += card('⚠ 当前失效项', String(ips.alerts.length), ips.alerts.map(a=>`<div class="err">· ${esc(a)}</div>`).join(''));
+  }
+  govQuery('#s-ips').innerHTML = h;
+}
+
+// ── 因子登记 ──
+function renderFactor(d){
+  const f = d.factors || {};
+  const sum = f.summary || {};
+  const items = f.factors || [];
+  const grp = {};
+  items.forEach(x=>{ const k=(x.kind==='exposure' ? (x.variant||'exposure') : 'predictive'); grp[k]=(grp[k]||0)+1; });
+  let h = card('因子总数（不可相加）', f.asOf||'', `<div class="kv">
+    <div>暴露·资产类别</div><div><b>${grp['asset-class']||0}</b> 个</div>
+    <div>暴露·因果合并</div><div><b>${grp['causal-chain']||0}</b> 个</div>
+    <div>预测因子</div><div><b>${grp['predictive']||0}</b> 个</div>
+    <div>合计行数</div><div>${items.length} 条 <span class="dim">（8+6+11，前两者同源两套口径，不可相加）</span></div>
+    <div>说明</div><div class="dim">${esc(sum.note||'三类因子含义不同，不可相加')}</div></div>`);
+  const tbody = items.map(x=>{
+    // board.json 里 correlations 可能是数组，也可能是 {}（空对象）；非数组一律当空处理。
+    const corrRaw = x.correlations;
+    const corrList = Array.isArray(corrRaw) ? corrRaw : [];
+    const cs = corrList.filter(c=>c && c.r!=null && Math.abs(Number(c.r))>=0.7);
+    const cTxt = cs.length ? cs.map(c=>`${esc(c.with)} ${Number(c.r)>0?'+':''}${Number(c.r).toFixed(3)}`).join(' · ') : '<span class="dim">—</span>';
+    return `<tr><td><b>${esc(x.id)}</b><div class="dim" style="font-size:11px">${esc(x.label||'')}</div></td>
+      <td><span class="pill">${esc(x.kind)}</span></td>
+      <td style="font-size:11px">${esc(x.direction||'—')}<div class="dim">${esc(x.updateFrequency||'')}</div></td>
+      <td style="font-size:11px">${cTxt}</td>
+      <td style="font-size:11px" class="dim">${esc(x.invalidation||'—')}</td></tr>`;
+  }).join('');
+  h += card('因子清单', items.length+' 条', `<table><thead><tr><th>id</th><th>类</th><th>方向/频率</th><th>|r|≥0.7</th><th>失效条件</th></tr></thead>
+    <tbody>${tbody||'<tr><td colspan=5 class="err">contracts 未就绪</td></tr>'}</tbody></table>`);
+  if (f.unknowns && f.unknowns.length){
+    h += card('未知项', String(f.unknowns.length), f.unknowns.map(u=>`<div class="dim" style="font-size:12px">· ${esc(u)}</div>`).join(''));
+  }
+  govQuery('#s-factor').innerHTML = h;
+}
+
+// ── 新闻映射 ──
+function renderNews(d){
+  const n = d.news || {};
+  const evs = n.events || [];
+  let h = card('事件映射字典', evs.length+' 类', `<table><thead><tr><th>事件类型</th><th>受影响因子</th><th>资产影响</th><th>可信度</th></tr></thead><tbody>` +
+    (evs.map(e=>`<tr><td><b>${esc(e.eventType)}</b><div class="dim" style="font-size:11px">${esc(e.frequency||'')}</div></td>
+      <td style="font-size:11px">${(e.affectedFactors||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</td>
+      <td style="font-size:11px">${(e.assetImpact||[]).map(a=>`${esc(a.asset)}：${esc(a.direction)}/${esc(a.strength)} <span class="dim">${esc(a.lag||'')}</span>`).join('<br>')}</td>
+      <td><span class="pill ${e.confidence==='A'?'ok':(e.confidence==='C'?'warn':'')}">${esc(e.confidence||'?')}</span></td></tr>`).join('')
+      || '<tr><td colspan=4 class="err">contracts 未就绪</td></tr>') + '</tbody></table>');
+  const wl = n.sourceWhitelist || [];
+  if (wl.length) h += card('来源白名单', wl.length+' 源', `<div>${wl.map(s=>`<span class="pill ${s.tier==='A'?'ok':''}">${esc(s.name||s.id)}</span>`).join('')}</div>`);
+  govQuery('#s-news').innerHTML = h;
+}
+
+// ── 推演规则 ──
+function renderChain(d){
+  const c = d.chain || {};
+  const r = c.rules || {};
+  let h = card('链式推演规则', 'chain-rules/v1', `<div class="kv">
+    <div>跳数上限</div><div><b class="${r.maxHops?'ok':'bad'}">${esc(r.maxHops==null?'未设':r.maxHops)}</b> 跳</div>
+    <div>每跳必填</div><div>${(r.requiredPerHop||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>
+    <div>必须回答</div><div class="warn">${esc(r.mustAnswer||'—')}</div>
+    <div>是否触发交易</div><div class="${r.mayTriggerTrade?'bad':'ok'}">${r.mayTriggerTrade?'可以（危险）':'不可以，仅生成假设'}</div>
+    <div>事后校准</div><div>${esc(r.calibration||'—')}</div></div>`);
+  const knownDev = (d.chain && d.chain.knownDeviations) ? d.chain.knownDeviations : (r.knownDeviations||[]);
+  if (knownDev && knownDev.length){
+    h += card('已知偏离（如实登记）', String(knownDev.length),
+      knownDev.map(x=>`<div class="err" style="font-size:12px">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
+  }
+  if (c.example){
+    const e = c.example;
+    h += card('示例记录', esc(e.recordId||''), (e.hops||[]).map(hp=>`
+      <div class="hops"><div class="hop"><b>第 ${esc(hp.hop)} 跳</b> <span class="pill ${(hp.probability>=0.7)?'ok':((hp.probability>=0.4)?'warn':'bad')}">p=${esc(hp.probability)}</span>
+      <div>${esc(hp.claim)}</div>
+      <div class="bar"><i style="width:${Math.round((hp.probability||0)*100)}%"></i></div>
+      <div class="dim" style="font-size:11px">观测：${esc(hp.observable)}<br>失效：${esc(hp.invalidation)}</div></div></div>`).join('')
+      + (function(c){
+      if(c && typeof c==='object'){
+        return `<div style="font-size:12px;margin-top:8px">
+          <div><b>裁决：</b>${esc(c.verdict||'—')}</div>
+          <div class="dim" style="margin-top:4px">${esc(c.text||'')}</div>
+          ${c.weightEffect?`<div style="margin-top:6px"><b>权重影响：</b><span class="dim">${esc(c.weightEffect)}</span></div>`:''}
+          ${c.whatWouldChangeIt?`<div style="margin-top:6px"><b>什么会推翻它：</b><span class="warn">${esc(c.whatWouldChangeIt)}</span></div>`:''}
+        </div>`;
+      }
+      return `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(c||'')}</div>`;
+    })(e.conclusion));
+  }
+  govQuery('#s-chain').innerHTML = h;
+}
+
+
+
+// ── 移动端三件：时效横幅 / 国家队 / 通知（2026-11-03）──
+function updateFreshnessBanner(d){
+  const f = d._freshness; const el = document.getElementById('govfreshbar');
+  if(!el) return;
+  if(!f){ el.className='freshbar warn'; el.textContent='⚠ 无时效信息（数据可能过期）'; el.hidden=false; return; }
+  el.hidden = false;
+  if(f.worst==='critical'){ el.className='freshbar bad'; }
+  else if(f.worst==='stale'){ el.className='freshbar warn'; }
+  else { el.className='freshbar ok'; }
+  let txt = f.worst==='critical' ? '⚠ ' : (f.worst==='stale' ? '△ ' : '✓ ');
+  txt += f.banner;
+  const h = (f.items||[]).find(x=>x.id==='holdings');
+  if(h && h.asOf) txt += '　（持仓 ' + h.asOf + (h.ageDays!=null?' / '+h.ageDays+'天':'') + '）';
+  el.textContent = txt;
+}
+
+function renderNationalTeam(d){
+  const n = d.nationalTeam; if(!n) return '';
+  if(!n.ok){
+    return card('国家队动向','未接入', '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
+      + '<div class="dim" style="font-size:11px">源：166.88.14.220:38657（朋友提供）。失败时明确报错，不显示旧数。</div>');
+  }
+  const s = n.summary||{}; const items = n.items||[];
+  let h = card('国家队动向','F2-补 宽基净申购', '<div class="kv">'
+    + '<div>采集正常</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
+    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
+    + '<div>共监控</div><div><b>'+(s.total||0)+'</b> 只 <span class="dim">增 '+(s.up||0)+' / 减 '+(s.down||0)+'</span></div></div>'
+    + '<table style="margin-top:8px"><thead><tr><th>ETF</th><th style="text-align:right">份额变化</th><th style="text-align:right">%</th></tr></thead><tbody>'
+    + items.slice(0,6).map(x=>'<tr><td>'+esc(x.name||x.code)+'<div class="dim" style="font-size:10px">'+esc(x.code)+'</div></td>'
+        + '<td class="num '+(x.deltaShares>0?'ok':'bad')+'">'+(x.deltaShares>0?'+':'')+(x.deltaWan!=null?x.deltaWan:'?')+' 万份</td>'
+        + '<td class="num">'+(x.deltaPct>0?'+':'')+x.deltaPct+'%</td></tr>').join('')
+    + '</tbody></table>'
+    + '<div class="dim" style="font-size:11px;margin-top:6px">'+esc(n.discipline||'')+'</div>');
+  return h;
+}
+
+// ── 国家队独立页（第 9 个 tab，比今日卡更详细）──
+function renderNationalTeamPage(d){
+  const n = d.nationalTeam;
+  const el = govQuery('#s-nt');
+  if(!n){
+    el.innerHTML = card('国家队动向','未接入','<div class="err">board.json 里没有 nationalTeam 段。</div>');
+    return;
+  }
+  if(!n.ok){
+    el.innerHTML = card('国家队动向','采集失败',
+        '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
+      + '<div class="dim" style="font-size:12px;margin-top:8px">失败时<strong>不显示旧数</strong>，避免把过期份额变化当成今天的信号。</div>'
+      + '<div class="dim" style="font-size:11px;margin-top:6px">源：166.88.14.220:38657（朋友提供）。</div>');
+    return;
+  }
+  const s = n.summary||{};
+  const items = Array.isArray(n.items) ? n.items : [];
+  const totalSummary = (s.total!=null) ? Number(s.total) : items.length;
+  const rows = items.map(function(x){
+    const up = Number(x.deltaShares)>0;
+    const down = Number(x.deltaShares)<0;
+    const cls = up ? 'ok' : (down ? 'bad' : '');
+    const sign = up ? '+' : '';
+    const wan = (x.deltaWan!=null) ? Number(x.deltaWan).toLocaleString('zh-CN',{maximumFractionDigits:0}) : (x.deltaShares!=null ? (Number(x.deltaShares)/10000).toFixed(0) : null);
+    const pctTxt = (x.deltaPct!=null) ? ((Number(x.deltaPct)>0?'+':'')+Number(x.deltaPct).toFixed(2)+'%') : '—';
+    return '<tr><td><b>'+esc(x.name||x.code)+'</b></td>'
+      + '<td class="dim">'+esc(x.code||'')+'</td>'
+      + '<td class="num '+cls+'">'+(wan!=null?sign+wan:'—')+'</td>'
+      + '<td class="num '+cls+'">'+pctTxt+'</td></tr>';
+  }).join('');
+  // 明细行数与 summary.total 不一致时如实说明，不假装列全了。
+  const gapNote = (items.length !== totalSummary)
+    ? '<div class="warn" style="font-size:11.5px;margin-top:8px">⚠ board.json 的 nationalTeam.items 本次只有 <b>'+items.length+'</b> 行明细，'
+      + '而 summary.total 记为 <b>'+totalSummary+'</b> 只（增 '+esc(s.up||0)+' / 减 '+esc(s.down||0)+'）。'
+      + '汇总数字来自采集端口径，明细只渲染 board.json 实际下发的行，不补齐、不推测缺失项。</div>'
+    : '';
+  let h = card('国家队动向 · 全量', 'F2-补 宽基净申购',
+      '<div class="kv">'
+    + '<div>采集状态</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
+    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
+    + '<div>汇总</div><div>共 '+esc(totalSummary)+' 只　'
+      + '<span class="ok">增 '+esc(s.up||0)+'</span> / '
+      + '<span class="bad">减 '+esc(s.down||0)+'</span>'
+      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':'')+'</div></div>' + gapNote);
+  h += card('ETF 明细', items.length+' 只',
+      '<table><thead><tr><th>ETF名</th><th>代码</th><th style="text-align:right">份额变化(万份)</th><th style="text-align:right">变化%</th></tr></thead><tbody>'
+    + (rows || '<tr><td colspan="4" class="err">无明细</td></tr>')
+    + '</tbody></table>');
+  h += card('口径纪律（原文）', '必读', '<div style="font-size:12.5px;white-space:pre-wrap">'+esc(n.discipline||'（board.json 未提供 discipline 字段）')+'</div>'
+    + '<div class="dim" style="font-size:11px;margin-top:8px">原文直出，不做二次解读。</div>');
+  el.innerHTML = h;
+}
+
+function renderNotifications(d){
+  const q = d.notifications; if(!q) return '';  const lv = q.byLevel||{}; const items = q.items||[];
+  const cls = {urgent:'bad', watch:'warn', info:'ok'};
+  const cn = {urgent:'紧急', watch:'观察', info:'信息'};
+  let h = card('通知', (q.count||0)+' 条', '<div class="kv">'
+    + '<div>分级</div><div><span class="pill bad">紧急 '+(lv.urgent||0)+'</span> <span class="pill warn">观察 '+(lv.watch||0)+'</span> <span class="pill">信息 '+(lv.info||0)+'</span></div>'
+    + '<div>策略</div><div class="dim">'+esc(q.policy||'')+'</div></div>'
+    + (items.length? items.map(x=>'<div style="border-left:3px solid var(--line);padding-left:10px;margin-top:8px">'
+        + '<div><span class="pill '+(cls[x.level]||'')+'">'+esc(cn[x.level]||x.level)+'</span> <b>'+esc(x.title)+'</b></div>'
+        + '<div class="dim" style="font-size:11px">'+esc(x.body||'')+'</div></div>').join('') : '<div class="dim">当前无通知</div>')
+    + '<button class="reload" id="govNotifyBtn" style="margin-top:10px">开启系统通知</button>'
+    + '<div class="dim" style="font-size:11px;margin-top:6px" id="notifyState"></div>');
+  return h;
+}
+
+function askNotify(){
+  const el=document.getElementById('notifyState');
+  if(!('Notification' in window)){ if(el) el.textContent='本环境不支持通知 API'; return; }
+  Notification.requestPermission().then(p=>{
+    if(el) el.textContent = '通知权限：'+p;
+    if(p==='granted'){
+      const q=(window.__boardData||{}).notifications||{};
+      const urgent=(Array.isArray(q.items)?q.items:[]).filter(x=>x.level==='urgent');
+      urgent.forEach((x,i)=>setTimeout(()=>{ try{ new Notification('【紧急】'+x.title,{body:x.body,tag:x.id}); }catch(e){} }, i*800));
+    }
   });
+}
+
+// ── 今日简报（阶段 1 核心）──
+function freshStatusLabel(v){ return v?'<span class="ok">正常</span>':'<span class="bad">过期</span>'; }
+function pct(v){ return v==null?'—':(Number(v).toFixed(2)+'%'); }
+function renderToday(d){
+  const td = d.today || {};
+  if (!td.position) { govQuery('#s-today').innerHTML = card('今日简报','', '<div class="err">today 段缺失</div>'); return; }
+  const p = td.position, rb = td.rebalance || {};
+  const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
+  let h = '';
+  if (td.live) {
+    const lv = td.live;
+    h += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
+      + '<div>风险仓位</div><div><b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span></div>'
+      + '<div>总资产</div><div>'+(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元</div>'
+      + '<div>需减（到目标）</div><div><b>'+(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0}))+'</b> 元</div>'
+      + '<div>动作</div><div><b>'+esc(lv.action||'—')+'</b> <span class="dim">信心 '+esc(lv.confidence||'—')+'</span></div>'
+      + '<div>生成时间</div><div class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</div></div>'
+      + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(lv.note||'')+'</div>');
+  }
+  h += card('① 配置偏离', td.date||'', '<div class="kv">'
+    + '<div>当前风险仓位</div><div><b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span></div>'
+    + '<div>硬顶</div><div>'+pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span></div>'
+    + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
+    + '<div>总财富</div><div>'+(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')+'</div>'
++ '<div>需净卖出</div><div>'+(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>'))+'</div>'
+    + '<div>数据时点</div><div class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</div></div>'
+    + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
+  h += card('② 再平衡提醒','阈值式', '<div class="kv">'
+    + '<div>运行带</div><div><b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span></div>'
+    + '<div>是否在带内</div><div class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</div>'
+    + '<div>动作</div><div><b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b></div></div>');
+  const pend = td.pending || [];
+  h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length
+    ? ('<table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'
+       + pend.map(function(x){ return '<tr><td><b>'+esc((x.what||'').replace(/\*/g,''))+'</b></td><td class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</td></tr>'; }).join('')
+       + '</tbody></table>')
+    : '<div class="dim">无待确认事项</div>');
+  const fr = td.freshness || [];
+  h += card('④ 数据新鲜度','每格可判定', '<table><thead><tr><th>数据</th><th>时点</th><th>状态</th></tr></thead><tbody>'
+    + fr.map(function(x){ return '<tr><td>'+esc(x.item)+'</td><td class="dim">'+esc(x.asOf||'—')+(x.ageDays!=null?' · '+x.ageDays+'天':'')+'</td><td>'+freshStatusLabel(!x.stale)+'</td></tr>'; }).join('')
+    + '</tbody></table>');
+  h += renderNationalTeam(d) + renderNotifications(d);
+  govQuery('#s-today').innerHTML = h;
+}
+
+// ── 观察清单 ──
+function renderWatch(d){
+  const td = d.today || {};
+  const pend = td.pending || [];
+  let h = card('待你决定', (td.pendingCnt||0)+' 条', pend.length
+    ? pend.map(function(x,i){ return '<div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">'
+        + '<div><b>'+(i+1)+'. '+esc((x.what||'').replace(/\*/g,''))+'</b></div>'
+        + '<div class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</div>'
+        + '<div class="dim" style="font-size:11px">归属：'+esc(x.owner||'user')+'</div></div>'; }).join('')
+    : '<div class="dim">无</div>');
+  h += card('确认后怎么记', 'cli', '<div class="dim" style="font-size:12px">决定之后用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」里。手机端直接按要等阶段 3 的写入 API。</div>');
+  govQuery('#s-watch').innerHTML = h;
+}
+
+// ── 设置（静态说明，无伪造开关）──
+function renderSettings(d){
+  const meta = window.__boardMeta || {};
+  const srcNow = meta.fromCache ? ('离线缓存 · ' + (meta.src||'')) : (meta.src || '（未加载）');
+  const lastAt = meta.lastSuccessAt || cacheMetaTime();
+  let h = '<div class="installbar" id="installPrompt"></div>';
+  h += card('数据源', '只读契约', '<div class="kv">'
+    + '<div>当前数据源</div><div><b>'+esc(srcNow)+'</b>'
+      + (meta.fromCache?' <span class="pill warn">离线/缓存</span>':' <span class="pill ok">在线</span>')+'</div>'
+    + '<div>降级顺序</div><div>① ./data/board.json（Pages 自托管）→ ② raw.githubusercontent.com → ③ localStorage 上次成功数据</div>'
+    + '<div>上次成功时间</div><div>'+esc(lastAt||'无（从未成功加载）')+'</div>'
+    + '<div>看板数据</div><div>board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
+    + '<div>口径根</div><div>investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）</div>'
+    + '<div>刷新</div><div>PC 侧重跑 export-board.ps1 后推送；本页每次打开取最新（带 cache-bust）</div>'
+    + '<div>离线</div><div class="dim">Service Worker 缓存 board.json（stale-while-revalidate）+ localStorage 兜底；断网时显示上次数据并标注「离线模式 · 数据时点」</div></div>')
+  + card('脱敏规则', '硬约束', '<div class="kv">'
+    + '<div>不进公开页</div><div>持仓名称、成本价、amountCny（决策金额）</div>'
+    + '<div>原因</div><div>2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史</div>'
+    + '<div>金额在哪</div><div>只在本机 _audit\\decisions\\decisions.jsonl</div></div>')
+  + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端还不能直接按「确认」——需要阶段 3 的写入 API</div>'
+    + '<div class="err">② 持仓快照过期，简报里仓位是推算值不是实时真值</div>'
+    + '<div class="err">③ 系统推送通知依赖 Notification API，部分浏览器/环境不支持</div>');
+  govQuery('#s-settings').innerHTML = h;
+  renderInstallPrompt();
+}
+
+// ── 审计时间线（人工确认留痕）──
+const ACT_CN = {confirm:'已确认', reject:'已否决', defer:'已推迟', note:'仅留痕'};
+const ACT_CLS = {confirm:'ok', reject:'bad', defer:'warn', note:''};
+function renderAudit(d){
+  const a = d.decisions || {};
+  const items = (a.items||[]).slice().reverse();
+  const by = a.byAction || {};
+  let h = card('人工确认留痕', (a.count||0)+' 条', `<div class="kv">
+    <div>总计</div><div><b>${a.count||0}</b> 条 <span class="dim">（append-only，不改旧行）</span></div>
+    <div>已确认</div><div>${by.confirm||0} 条</div>
+    <div>已否决</div><div>${by.reject||0} 条</div>
+    <div>已推迟</div><div>${by.defer||0} 条</div>
+    <div>仅留痕</div><div>${by.note||0} 条</div>
+    <div>脱敏</div><div class="dim">金额 amountCny 不进入本页，只留本机账本</div></div>`);
+  const rows = items.map(x=>`
+    <div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">
+      <div><span class="pill ${ACT_CLS[x.action]||''}">${esc(ACT_CN[x.action]||x.action)}</span> <b>${esc(x.subject)}</b></div>
+      <div class="dim" style="font-size:11px">${esc((x.decidedAt||'').slice(0,16).replace('T',' '))} · ${esc(x.actor||'')} · ${esc(x.source||'')}${x.dataAsOf?' · 依据数据 '+esc(x.dataAsOf):''}</div>
+      ${x.reason?'<div style="font-size:12px;margin-top:3px">'+esc(x.reason)+'</div>':''}
+      ${x.supersedes?'<div class="dim" style="font-size:11px">取代 '+esc(x.supersedes)+'</div>':''}
+    </div>`).join('');
+  h += card('时间线（新→旧）', (a.count||0)+' 条', rows || '<div class="dim">账本为空。用 tools\\log-decision.ps1 记第一条。</div>');
+  h += card('怎么记', 'cli', '<div style="font-size:12px" class="dim">powershell -File tools\\log-decision.ps1 -Action confirm -Subject &quot;减仓执行单&quot; -Reason &quot;已提交&quot;<br>Action 四选一：<b>confirm</b> / <b>reject</b> / <b>defer</b> / <b>note</b>；同 id 重复写会被拒（幂等）。</div>');
+  govQuery('#s-audit').innerHTML = h;
+}
+// ── 加载 ──
+// 三源降级（先到先得，每个带 ?_=Date.now() 破缓存）：
+//   1) ./data/board.json  同域 Pages 自托管，40 秒内刷新（绕开 CDN 滞后）
+//   2) raw.githubusercontent.com 公开仓库兜底
+//   3) localStorage 上次成功数据（离线可读）
+// 全部失败 → 显示错误 + 「上次成功时间」，绝不显示成 0 或空成功。
+const BOARD_SOURCE_SELF  = './data/board.json';
+const BOARD_SOURCE_RAW   = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
+const BOARD_CACHE_KEY    = 'board.cache.v1';
+const BOARD_CACHE_META   = 'board.cache.meta.v1';
+
+function readCache(){
   try{
-    var want='';
-    if(/[?&]page=gov/.test(location.search)||location.hash==='#gov') want='gov';
-    else want=localStorage.getItem('finhub.page')||'';
-    if(want==='gov'){ var b=document.querySelector('#modebar button[data-page="gov"]'); if(b) b.click(); }
+    const rawTxt = localStorage.getItem(BOARD_CACHE_KEY);
+    if(!rawTxt) return null;
+    const parsed = JSON.parse(rawTxt);
+    if(!parsed || !parsed.schema) return null;
+    let meta = null;
+    try{ meta = JSON.parse(localStorage.getItem(BOARD_CACHE_META) || 'null'); }catch(e){ meta = null; }
+    return { d: parsed, src: (meta && meta.src) || 'localStorage 缓存', cachedAt: (meta && meta.at) || null };
+  }catch(e){ return null; }
+}
+function writeCache(d, src){
+  try{
+    localStorage.setItem(BOARD_CACHE_KEY, JSON.stringify(d));
+    localStorage.setItem(BOARD_CACHE_META, JSON.stringify({ src: src, at: new Date().toISOString(), generatedAt: d.generatedAt || null }));
+  }catch(e){ /* 配额满/隐私模式：静默降级，不影响在线取数 */ }
+}
+function cacheMetaTime(){
+  try{
+    const meta = JSON.parse(localStorage.getItem(BOARD_CACHE_META) || 'null');
+    if(meta && meta.at) return meta.at;
   }catch(e){}
+  return null;
+}
+
+async function fetchOne(url){
+  const r = await fetch(url + (url.indexOf('?')>=0 ? '&' : '?') + '_=' + Date.now(), {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  if(!j || typeof j !== 'object') throw new Error('响应不是 JSON 对象');
+  return j;
+}
+
+// 主取数：按顺序尝试 前两源；失败再落到 localStorage 缓存。
+// 返回 { d, src, fromCache, lastSuccessAt, errors }
+async function fetchBoard(){
+  const errors = [];
+  const candidates = [BOARD_SOURCE_SELF, BOARD_SOURCE_RAW];
+  for (const u of candidates){
+    try{
+      const d = await fetchOne(u);
+      writeCache(d, u);
+      return { d: d, src: u, fromCache: false, lastSuccessAt: new Date().toISOString(), errors: errors };
+    }catch(e){
+      errors.push(u + ' → ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+  const cached = readCache();
+  if(cached){
+    return { d: cached.d, src: cached.src, fromCache: true,
+             lastSuccessAt: cached.cachedAt || cacheMetaTime(), errors: errors };
+  }
+  return { d: null, src: null, fromCache: false, lastSuccessAt: cacheMetaTime(), errors: errors };
+}
+
+let LAST_LOAD_ERRORS = [];
+async function load(){
+  govQuery('#gen').textContent = '加载 board.json …';
+  try{
+    const got = await fetchBoard();
+    LAST_LOAD_ERRORS = got.errors || [];
+    if(!got.d){
+      const lastTxt = got.lastSuccessAt
+        ? ('上次成功时间：' + got.lastSuccessAt)
+        : '上次成功时间：无（此前从未成功加载过）';
+      govQuery('#gen').innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>'
+        + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>'
+        + '<div class="dim" style="font-size:11px">失败明细：' + esc((LAST_LOAD_ERRORS.join(' | ')) || '未知') + '</div>'
+        + '<div class="dim" style="font-size:11px">点右下角刷新重试。</div>';
+      govQuery('#src').textContent = 'board.json · 读取失败';
+      return;
+    }
+    const d = got.d;
+    govQuery('#ver').textContent = d.schema || 'board/v1';
+    const srcLabel = got.fromCache ? ('离线缓存 · ' + got.src) : got.src;
+    govQuery('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;
+    govQuery('#src').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
+    window.__boardData = d;
+    window.__boardMeta = got;
+    updateFreshnessBanner(d);
+    if(got.fromCache){
+      const bar = document.getElementById('govfreshbar');
+      if(bar){
+        bar.hidden = false;
+        bar.className = 'freshbar warn';
+        bar.textContent = '离线模式 · 数据时点 ' + (d.generatedAt || '未知');
+      }
+    }
+    renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
+    renderAudit(d); renderWatch(d); renderNationalTeamPage(d); renderSettings(d);
+  }catch(e){
+    const lastTxt = cacheMetaTime() ? ('上次成功时间：' + cacheMetaTime()) : '上次成功时间：无（此前从未成功加载过）';
+    govQuery('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
+      + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>';
+  }
+}
+
+const TAB_KEYS = ['today','ips','factor','news','chain','watch','audit','nt','settings'];
+govQuery('#govnav').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));
+  TAB_KEYS.forEach(t=>{ govQuery('#s-'+t).hidden = (t!==b.dataset.t); });
+});
+function showTab(t){
+  if(!t || TAB_KEYS.indexOf(t)<0) t='today';
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x.dataset.t===t));
+  TAB_KEYS.forEach(k=>{ govQuery('#s-'+k).hidden = (k!==t); });
+}
+window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
+load().then(()=>showTab(location.hash.slice(1)));
+
+// ── Service Worker：board.json 离线只读缓存（stale-while-revalidate）──
+// 用 Blob URL 内联注册，避免多出一个 sw.js 文件；file:// 或受限环境失败时静默降级（localStorage 兜底）。
+function registerServiceWorker(){ /* 已停用：与 index-remote 的 sw.js 同 scope 冲突 */
+  if(!('serviceWorker' in navigator)) return;
+  if(location.protocol !== 'https:') return;          // file:// 下 SW 不可用，静默跳过
+  const swSource = [
+    "const CACHE='board-sw-v1';",
+    "self.addEventListener('install',e=>{self.skipWaiting();});",
+    "self.addEventListener('activate',function(e){ e.waitUntil( caches.keys().then(function(ks){ return Promise.all( ks.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); }) ); }).then(function(){ return self.clients.claim(); }) ); });",
+    "self.addEventListener('fetch',e=>{",
+    "  const req=e.request;",
+    "  if(req.method!=='GET') return;",
+    "  const url=new URL(req.url);",
+    "  const sameOrigin=url.origin===self.location.origin;",
+    "  const isBoard=sameOrigin && /(^|\\/)data\\/board\\.json(\\?|$)/.test(url.pathname+url.search);",
+    "  const isRaw=url.host==='raw.githubusercontent.com' && /finhub-data\\/main\\/board\\.json/.test(url.pathname);",
+    "  if(!isBoard && !isRaw) return;",
+    "  e.respondWith(caches.open(CACHE).then(cache=>cache.match(req).then(hit=>{",
+    "    const net=fetch(req).then(res=>{",
+    "      if(res && res.ok) { const copy=res.clone(); cache.put(req,copy); }",
+    "      return res;",
+    "    }).catch(()=>hit);",
+    "    return hit || net;",
+    "  })));",
+    "});"
+  ].join('\n');
+  try{
+    const blobUrl = URL.createObjectURL(new Blob([swSource], {type:'text/javascript'}));
+    navigator.serviceWorker.register(blobUrl).catch(()=>{});
+  }catch(e){ /* 静默降级：localStorage 缓存已在 fetchBoard 里兜底 */ }
+}
+/* SW 由 index-remote 的 sw.js 负责，避免同 scope 冲突 */
+
+// ── PWA 安装提示 ──
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(evt){
+  evt.preventDefault();
+  deferredInstallPrompt = evt;
+  window.__canInstall = true;
+  renderInstallPrompt();
+});
+window.addEventListener('appinstalled', function(){
+  deferredInstallPrompt = null;
+  window.__canInstall = false;
+  renderInstallPrompt();
+});
+function renderInstallPrompt(){
+  const box = document.getElementById('installPrompt');
+  if(!box) return;
+  const canInstall = !!deferredInstallPrompt;
+  box.innerHTML = canInstall
+    ? '<b>把看板装到手机主屏</b><span class="dim">离线也能打开，显示上次数据</span>'
+      + '<button id="installBtn" type="button">添加到主屏</button>'
+    : '<b>添加到主屏</b><span class="dim">Android Chrome：右上角菜单 → 添加到主屏幕；'
+      + 'iOS Safari：分享按钮 → 添加到主屏幕；桌面 Chrome/Edge：地址栏右侧安装图标。</span>';
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.addEventListener('click', promptInstall);
+}
+async function promptInstall(){
+  if(!deferredInstallPrompt) return;
+  const p = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  try{
+    p.prompt();
+    const choice = await p.userChoice;
+    window.__installChoice = choice && choice.outcome;
+  }catch(e){ window.__installChoice = 'error'; }
+  renderInstallPrompt();
+}
+
+
+/* ══ 合并进 index-remote.html：对外只暴露 window.GOV ══ */
+function renderAll(d){
+  if(!d) return;
+  window.__boardData = d;
+  renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
+  renderAudit(d); renderWatch(d); renderNationalTeamPage(d); renderSettings(d);
+  const genEl = document.getElementById('govGen');
+  if(genEl){
+    const meta = window.__boardMeta || {};
+    const srcLabel = meta.fromCache ? ('离线缓存 · ' + (meta.src||'')) : (meta.src || '（未加载）');
+    genEl.textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;
+  }
+  const srcEl = document.getElementById('govSrc');
+  if(srcEl) srcEl.textContent = 'board.json · ' + String(d.generatedAt||'').slice(0,16);
+  const verEl = document.getElementById('govVer');
+  if(verEl) verEl.textContent = d.schema || 'board/v1';
+  updateFreshnessBanner(d);
+  bindGovButtons();
+}
+/* index-remote 的 loadExtras() 取到 board.json 后调用此入口 */
+function applyBoardData(d){
+  window.__boardMeta = { src: 'index-remote → loadExtras() → data/board.json', fromCache: false, lastSuccessAt: new Date().toISOString() };
+  renderAll(d);
+}
+/* 治理页「刷新」按钮：自行再取一次 board.json */
+async function govReload(){
+  const genEl = document.getElementById('govGen');
+  if(genEl) genEl.textContent = '加载 board.json …';
+  const got = await fetchBoard();
+  if(!got.d){
+    if(genEl) genEl.innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>';
+    return;
+  }
+  window.__boardMeta = got;
+  renderAll(got.d);
+}
+/* 绑定治理页里的按钮（inline handler 会被全局同名函数劫持，故一律程序化绑定） */
+function bindGovButtons(){
+  const notifyBtn = document.getElementById('govNotifyBtn');
+  if(notifyBtn && !notifyBtn.dataset.bound){ notifyBtn.dataset.bound='1'; notifyBtn.addEventListener('click', askNotify); }
+  const reloadBtn = document.getElementById('govReloadBtn');
+  if(reloadBtn && !reloadBtn.dataset.bound){ reloadBtn.dataset.bound='1'; reloadBtn.addEventListener('click', govReload); }
+  const installBtn = document.getElementById('installBtn');
+  if(installBtn && !installBtn.dataset.bound){ installBtn.dataset.bound='1'; installBtn.addEventListener('click', promptInstall); }
+}
+/* 治理页 tab 切换（沿用 board 原 showTab 语义，作用于 #govnav / #s-*） */
+function govShowTab(tabName){
+  if(!tabName || TAB_KEYS.indexOf(tabName)<0) tabName='today';
+  [...document.querySelectorAll('#govnav button')].forEach(function(btn){ btn.classList.toggle('on', btn.dataset.t===tabName); });
+  TAB_KEYS.forEach(function(key){ const el=document.getElementById('s-'+key); if(el) el.hidden=(key!==tabName); });
+  return tabName;
+}
+document.getElementById('govnav').addEventListener('click', function(ev){
+  const btn = ev.target.closest ? ev.target.closest('button') : null; if(!btn) return;
+  govShowTab(btn.dataset.t);
+});
+window.GOV = {
+  render: function(d){ applyBoardData(d); },
+  showTab: function(t){ return govShowTab(t); },
+  reload: govReload,
+  TAB_KEYS: TAB_KEYS
+};
+/* 时序兜底：若 index-remote 的 loadExtras() 在本 IIFE 之前已完成，补渲染一次 */
+if(window.__extrasData){ applyBoardData(window.__extrasData); }
+
 })();
+</script>
+<script>
+
+/* ── 单页模式切换：实时 / 治理 ── */
+(function(){
+  "use strict";
+  const MODES=['live','gov'];
+  let currentGovTab='today';
+  function applyMode(mode){
+    if(MODES.indexOf(mode)<0) mode='live';
+    MODES.forEach(function(m){
+      const el=document.getElementById('page-'+m); if(el) el.hidden=(m!==mode);
+    });
+    [...document.querySelectorAll('#modebar button')].forEach(function(btn){
+      btn.classList.toggle('on', btn.dataset.page===mode);
+    });
+    if(mode==='gov' && window.GOV && window.GOV.showTab) window.GOV.showTab(currentGovTab);
+    window.__fhMode=mode;
+  }
+  document.getElementById('modebar').addEventListener('click', function(ev){
+    const btn=ev.target.closest ? ev.target.closest('button') : null; if(!btn) return;
+    applyMode(btn.dataset.page);
+  });
+  /* 记住治理页当前 tab，切回实时再切回治理仍停在原处 */
+  document.addEventListener('click', function(ev){
+    const btn=ev.target.closest ? ev.target.closest('#govnav button') : null; if(!btn) return;
+    currentGovTab=btn.dataset.t||'today';
+  }, true);
+  window.__fhApplyMode=applyMode;
+  applyMode('live');
+})();
+
 </script>
 </body>
 </html>

@@ -137,8 +137,11 @@ function renderFactor(d){
     <div>合计行数</div><div>${items.length} 条 <span class="dim">（8+6+11，前两者同源两套口径，不可相加）</span></div>
     <div>说明</div><div class="dim">${esc(sum.note||'三类因子含义不同，不可相加')}</div></div>`);
   const tbody = items.map(x=>{
-    const cs = (x.correlations||[]).filter(c=>Math.abs(c.r)>=0.7);
-    const cTxt = cs.length ? cs.map(c=>`${esc(c.with)} ${c.r>0?'+':''}${c.r.toFixed(3)}`).join(' · ') : '<span class="dim">—</span>';
+    // board.json 里 correlations 可能是数组，也可能是 {}（空对象）；非数组一律当空处理。
+    const corrRaw = x.correlations;
+    const corrList = Array.isArray(corrRaw) ? corrRaw : [];
+    const cs = corrList.filter(c=>c && c.r!=null && Math.abs(Number(c.r))>=0.7);
+    const cTxt = cs.length ? cs.map(c=>`${esc(c.with)} ${Number(c.r)>0?'+':''}${Number(c.r).toFixed(3)}`).join(' · ') : '<span class="dim">—</span>';
     return `<tr><td><b>${esc(x.id)}</b><div class="dim" style="font-size:11px">${esc(x.label||'')}</div></td>
       <td><span class="pill">${esc(x.kind)}</span></td>
       <td style="font-size:11px">${esc(x.direction||'—')}<div class="dim">${esc(x.updateFrequency||'')}</div></td>
@@ -258,33 +261,40 @@ function renderNationalTeamPage(d){
     return;
   }
   const s = n.summary||{};
-  const items = n.items||[];
+  const items = Array.isArray(n.items) ? n.items : [];
+  const totalSummary = (s.total!=null) ? Number(s.total) : items.length;
   const rows = items.map(function(x){
     const up = Number(x.deltaShares)>0;
     const down = Number(x.deltaShares)<0;
     const cls = up ? 'ok' : (down ? 'bad' : '');
     const sign = up ? '+' : '';
-    const wan = (x.deltaWan!=null) ? x.deltaWan : (x.deltaShares!=null ? (Number(x.deltaShares)/10000).toFixed(2) : null);
+    const wan = (x.deltaWan!=null) ? Number(x.deltaWan).toLocaleString('zh-CN',{maximumFractionDigits:0}) : (x.deltaShares!=null ? (Number(x.deltaShares)/10000).toFixed(0) : null);
     const pctTxt = (x.deltaPct!=null) ? ((Number(x.deltaPct)>0?'+':'')+Number(x.deltaPct).toFixed(2)+'%') : '—';
     return '<tr><td><b>'+esc(x.name||x.code)+'</b></td>'
       + '<td class="dim">'+esc(x.code||'')+'</td>'
       + '<td class="num '+cls+'">'+(wan!=null?sign+wan:'—')+'</td>'
       + '<td class="num '+cls+'">'+pctTxt+'</td></tr>';
   }).join('');
+  // 明细行数与 summary.total 不一致时如实说明，不假装列全了。
+  const gapNote = (items.length !== totalSummary)
+    ? '<div class="warn" style="font-size:11.5px;margin-top:8px">⚠ board.json 的 nationalTeam.items 本次只有 <b>'+items.length+'</b> 行明细，'
+      + '而 summary.total 记为 <b>'+totalSummary+'</b> 只（增 '+esc(s.up||0)+' / 减 '+esc(s.down||0)+'）。'
+      + '汇总数字来自采集端口径，明细只渲染 board.json 实际下发的行，不补齐、不推测缺失项。</div>'
+    : '';
   let h = card('国家队动向 · 全量', 'F2-补 宽基净申购',
       '<div class="kv">'
     + '<div>采集状态</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
     + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
-    + '<div>汇总</div><div>共 '+esc(s.total!=null?s.total:items.length)+' 只　'
+    + '<div>汇总</div><div>共 '+esc(totalSummary)+' 只　'
       + '<span class="ok">增 '+esc(s.up||0)+'</span> / '
       + '<span class="bad">减 '+esc(s.down||0)+'</span>'
-      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':'')+'</div></div>');
+      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':'')+'</div></div>' + gapNote);
   h += card('ETF 明细', items.length+' 只',
       '<table><thead><tr><th>ETF名</th><th>代码</th><th style="text-align:right">份额变化(万份)</th><th style="text-align:right">变化%</th></tr></thead><tbody>'
     + (rows || '<tr><td colspan="4" class="err">无明细</td></tr>')
     + '</tbody></table>');
   h += card('口径纪律（原文）', '必读', '<div style="font-size:12.5px;white-space:pre-wrap">'+esc(n.discipline||'（board.json 未提供 discipline 字段）')+'</div>'
-    + '<div class="dim" style="font-size:11px;margin-top:8px">净申购 ≠ 国家队买入，属推断。显示口径纪律原文，不做二次解读。</div>');
+    + '<div class="dim" style="font-size:11px;margin-top:8px">原文直出，不做二次解读。</div>');
   el.innerHTML = h;
 }
 
@@ -310,7 +320,7 @@ function askNotify(){
     if(el) el.textContent = '通知权限：'+p;
     if(p==='granted'){
       const q=(window.__boardData||{}).notifications||{};
-      const urgent=(q.items||[]).filter(x=>x.level==='urgent');
+      const urgent=(Array.isArray(q.items)?q.items:[]).filter(x=>x.level==='urgent');
       urgent.forEach((x,i)=>setTimeout(()=>{ try{ new Notification('【紧急】'+x.title,{body:x.body,tag:x.id}); }catch(e){} }, i*800));
     }
   });

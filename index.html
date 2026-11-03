@@ -144,11 +144,6 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
 #toast.on{opacity:1}
 
-.govnav{display:flex;gap:6px;overflow-x:auto;padding:0 4px 10px;-webkit-overflow-scrolling:touch}
-.govnav::-webkit-scrollbar{display:none}
-.gov{flex:0 0 auto;font-size:12px;padding:5px 11px;border-radius:999px;background:var(--card);
-  border:1px solid var(--line);color:var(--dim);text-decoration:none;white-space:nowrap}
-.gov:active,.gov:focus{background:var(--acc);border-color:var(--acc);color:#04101f}
 </style>
 </head>
 <body>
@@ -157,12 +152,6 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <div class="brand">Fin<span>Hub</span></div>
     <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
   </header>
-  <div class="govnav">
-    <a class="gov" href="board.html#ips">IPS 五项</a>
-    <a class="gov" href="board.html#factor">因子登记</a>
-    <a class="gov" href="board.html#news">新闻映射</a>
-    <a class="gov" href="board.html#chain">推演规则</a>
-  </div>
   <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
 </div>
 <script>
@@ -275,6 +264,32 @@ function render(s){
     </div>`;
   }
 
+  /* 日频信号卡：一天一版，因子按收盘算，盘中不重算 */
+  const dsv=s.daily_signal||{};
+  if(dsv.signal){
+    const sg=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
+    const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[sg.action]||'wait';
+    const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[sg.action]||sg.action;
+    const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
+    h+=`<div class="card">
+      <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · ${(dsv.builtAt||'').slice(11,16)}</span></h2>
+      <div class="hero">
+        <div class="badge ${dcls}">${dcn}</div>
+        <div class="meta">
+          <div class="stage">${sg.stage||'—'} <span class="pill">机会 ${sg.opportunity??'—'} / 风险 ${sg.risk??'—'}</span></div>
+          <div class="adv">信心 ${sg.confidence||'—'}${fz.incomplete?' · <span style="color:var(--warn)">数据缺口已降档</span>':''}</div>
+        </div>
+      </div>
+      <div class="bars">
+        ${bar('风险敞口',dv.riskPct,100,'var(--up)')}
+        ${bar('目标 20%',20,100,'#5a6675')}
+      </div>
+      <div class="note">总资产 ${money(dv.total)} · 风险 ${money(dv.risk)}（${dv.riskPct??'—'}%）· 回到 20% 需减 ${money(dv.trimNeeded)}</div>
+      ${(dsv.checklist||[]).map(x=>`<div class="concl">· ${x}</div>`).join('')}
+      <div class="note">频率与失效条件绑定：每个因子登记了「超过 X 小时未更新即无效」，失效因子强制不投票。行情卡另有刷新周期。</div>
+    </div>`;
+  }
+
   /* 大盘裁决 */
   h+=`<div class="card">
     <h2>大盘裁决 <span class="tag">引擎 · 收盘序列</span></h2>
@@ -331,6 +346,25 @@ function render(s){
     h+=`<div class="note">规则：因果因子须同时满足「有可命名传导机制」+「历史样本方向可复现」，才允许改 action；相关因子只描述风险偏好。历史证据每周重算（n=样本数，20 交易日窗口，未扣成本）。</div></div>`;
   }
 
+  /* 数据新鲜度：每个因子是否在失效阈值内 */
+  const fzv=s.freshness||{};
+  if((fzv.items||[]).length){
+    const cnt=fzv.counts||{};
+    h+=`<div class="card"><h2>数据新鲜度 <span class="tag">${cnt.valid??0}/${cnt.total??0} 有效${fzv.incomplete?' · 有硬缺口':''}</span></h2>`;
+    if((fzv.gaps||[]).length){
+      h+=`<div class="concl" style="color:var(--warn)">${fzv.gaps.map(g=>'· '+g.name+'：'+g.reason).join('<br>')}</div>`;
+    }
+    h+='<table>';
+    fzv.items.forEach(i=>{
+      const c=i.valid?'var(--dim)':'var(--warn)';
+      h+=`<tr><td>${i.valid?'✅':'⚠️'} ${i.name}</td>
+        <td style="text-align:right;color:${c}">${i.asof||'—'}</td>
+        <td style="text-align:right;color:${c}">${i.ageHours==null?'—':i.ageHours+'h'}</td>
+        <td style="text-align:right;color:#5a6675">${i.limitHours}h</td></tr>`;
+    });
+    h+='</table><div class="note">阈值写在 factor_registry.py。超过阈值的因子被强制归零票，不再冒充新信号；缺口同时写入 data/gaps.jsonl 留痕。</div></div>';
+  }
+
   const f2=b.F2||{},f3=b.F3||{},oil=c.OIL||{},cl=c.CL||{},xau=c.XAU||{};
   const d2=f2.value!=null&&f2.prev!=null?(f2.value-f2.prev).toFixed(4):null;
   const d3=f3.value!=null&&f3.prev!=null?(f3.value-f3.prev).toFixed(2):null;
@@ -346,6 +380,9 @@ function render(s){
       <small>美10Y ${num(f3.us10y,2)}%${f3.date&&f3.date!==b.asof?' · 数据日 '+f3.date:''}</small></div>
       <div class="v">${num(f3.value,2)}%<small class="${d3>0?'up':(d3<0?'dn':'fl')}">${d3>0?'+':''}${d3??'—'} bp</small></div></div>
     <div class="note">口径纪律：F1 必须是 ICE Brent Dec-2026 官方结算价，近月 Jan-2027 报价不得冒充。下方为盘中 tick，仅供方向参考。</div>
+    ${(()=>{const y=(s.causal||{}).yields;if(!y||!y.record)return '';
+      const r=y.record,c=y.check;
+      return `<div class="note">美债10Y 唯一记录源：${r.src} ${r.value}%（${r.date}）${c?` · 交叉校验 ${c.src} ${c.value}%（${c.date}）→ ${y.verdict||''}`:' · 交叉校验源本轮未取到'}</div>`;})()}
   </div>`;
 
   /* 盘中观测 */
@@ -477,6 +514,30 @@ function render(s){
     h+=`<div class="note">${ns.error?'AI 打分失败：'+ns.error+'。':'打分为 AI 方向性判断，只做参考，不参与引擎裁决。'}只摘「事实」段，全文见 PC 端 daily-news/digest_${nw.date||''}.md</div></div>`;
   }else if(nw.error){
     h+=`<div class="card"><h2>每日新闻 <span class="tag">未取到</span></h2><div class="err">${nw.error}</div></div>`;
+  }
+
+  /* 突发观察：三层降噪后只剩假设卡 + 观察清单，永不改 action */
+  const bu=s.burst||{};
+  if(bu.builtAt){
+    const cl=bu.cluster||{}, cards=bu.cards||[], wl=bu.watchlist||[];
+    h+=`<div class="card"><h2>突发观察 <span class="tag">${bu.incomplete?'数据不完整 · 已抑制':'三层降噪'} · ${(bu.builtAt||'').slice(11,16)}</span></h2>`;
+    h+=`<div class="note">轮询 ${bu.poll&&bu.poll.ok?'正常':'失败'} · 新条目 ${bu.poll&&bu.poll.newItems||0} · 窗口 ${cl.windowHours||6}h 内 ${cl.recent||0} 条 · 候选集群 ${(cl.clusters||[]).length} 个</div>`;
+    if((cl.clusters||[]).length){
+      h+=`<div class="tags">${cl.clusters.map(x=>`${x.keyword}×${x.n}`).join(' · ')}</div>`;
+    }
+    cards.forEach(x=>{
+      h+=`<div class="alrt"><span class="lv" style="background:var(--card2);color:var(--acc)">假设</span>
+        <div class="m"><b>${x.event}</b> <span class="pill">${x.confidence} · ${x.clusterDocs||0} 条</span>
+        <div class="rd">${x.hypothesis}</div>
+        <small>验证用：${(x.verifyWith||[]).join(' / ')||'—'}</small>
+        <small style="color:var(--warn)">${x.action}</small></div></div>`;
+    });
+    wl.slice(0,6).forEach(x=>{
+      h+=`<div class="alrt"><span class="lv" style="background:var(--card2);color:#5a6675">观察</span>
+        <div class="m"><b>${x.event}</b> <span class="pill">${x.confidence}</span>
+        <div class="rd">${x.note||''}${(x.keywords||[]).length?' · '+x.keywords.join('/'):''}</div></div></div>`;
+    });
+    h+=`<div class="note">规则：单条快讯永不触发推演；命中字典且集群密度够才生成假设卡；假设卡只写「该看哪个数据」，不改仓。</div></div>`;
   }
 
   /* 链式推演 */

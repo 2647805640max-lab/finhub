@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 00:04:35",
+    "generatedAt":  "2026-11-04 00:05:43",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 00:04",
+                                        "asOf":  "2026-11-04 00:05",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 00:04:36",
+                       "checkedAt":  "2026-11-04 00:05:44",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1753,7 +1753,7 @@
                                          "id":  "decisions",
                                          "label":  "决策账本",
                                          "asOf":  "2026-11-02 23:43",
-                                         "ageDays":  1.01,
+                                         "ageDays":  1.02,
                                          "maxAgeDays":  7,
                                          "stale":  false
                                      },
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 00:04:37",
+                          "generatedAt":  "2026-11-04 00:05:47",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 00:04:37",
+                       "generatedAt":  "2026-11-04 00:05:47",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2022,20 +2022,26 @@
                                             "overall":  "WARN",
                                             "durationMs":  153464,
                                             "dataAgeMin":  2.6
+                                        },
+                                        {
+                                            "at":  "2026-11-04T00:04:37+08:00",
+                                            "overall":  "FAIL",
+                                            "durationMs":  3298,
+                                            "dataAgeMin":  0
                                         }
                                     ],
                        "stats":  {
-                                     "total":  3,
+                                     "total":  4,
                                      "ok":  0,
                                      "warn":  3,
-                                     "fail":  0,
-                                     "consecutiveBad":  3,
-                                     "lastRunAt":  "2026-11-03T23:50:44+08:00",
-                                     "lastOverall":  "WARN"
+                                     "fail":  1,
+                                     "consecutiveBad":  4,
+                                     "lastRunAt":  "2026-11-04T00:04:37+08:00",
+                                     "lastOverall":  "FAIL"
                                  },
                        "health":  {
                                       "status":  "degraded",
-                                      "reason":  "连续 3 次异常（最近 = WARN）"
+                                      "reason":  "连续 4 次异常（最近 = FAIL）"
                                   },
                        "degraded":  [
 

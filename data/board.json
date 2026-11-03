@@ -1,7 +1,7 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-03 22:00:23",
-    "generatedBy":  "E:\\investment-os\\tools\\export-board.ps1",
+    "generatedAt":  "2026-11-03 22:38:26",
+    "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
                 "items":  [
@@ -20,11 +20,11 @@
                                   "note":  "rules.json 只能收紧、不能放宽"
                               },
                               {
-                                  "status":  "ok",
+                                  "status":  "warn",
                                   "name":  "再平衡方式",
-                                  "source":  "engine_v2.py:375-377 band_low/band_high/in_band",
-                                  "value":  "阈值式 [8%,15%]",
-                                  "note":  "带内不动；上沿被 min(15,15+7) 裁到 15，不是 22"
+                                  "source":  "研究引擎 engine_v2.py:376 min(HARD,cap+band)=15 ｜ 生产规则 [已移除] bandHigh=target+band=22（无裁剪）",
+                                  "value":  "阈值式（口径冲突未决）",
+                                  "note":  "两个实现不一致：研究引擎 [8,15]、生产规则 [8,22]。红队 2026-11-03 实测生产 evaluateRules() 输出「无交易带 [8%, 22%]」。此冲突待裁定，页面不得单选一个"
                               },
                               {
                                   "status":  "warn",
@@ -66,9 +66,9 @@
                                         "direction":  "该因子暴露越高，组合对实际利率上行的敏感度越高（负向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新（当前持仓快照 asof=2026-10-12，已过期，见 _unknowns）。",
                                         "invalidation":  "若黄金腿被清空或该桶不再持有，则该暴露因子归零；若实际利率不再构成该腿的主要驱动（例如转为投机型持有），则该映射失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/growth_risk",
@@ -78,9 +78,9 @@
                                         "direction":  "该因子暴露越高，组合对成长风格杀估值行情的敏感度越高（负向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若成长腿全部清仓，该暴露归零；若这些持仓的驱动因素转为非成长逻辑（如纯红利属性的科技龙头），该分类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/policy_green",
@@ -90,9 +90,9 @@
                                         "direction":  "该因子暴露越高，组合对绿色政策边际变化的敏感度越高（双向，取决于政策方向）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无绿色电力持仓则归零；若该腿的收益来源与政策脱钩（如转为纯发电量驱动），该分类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/commodity",
@@ -102,9 +102,9 @@
                                         "direction":  "该因子暴露越高，组合对商品价格周期越敏感（正向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无有色/上游资源持仓则归零；若该腿的驱动因素转为非商品价格（如纯份额提升逻辑），该分类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/broad",
@@ -114,9 +114,9 @@
                                         "direction":  "该因子暴露越高，组合对市场整体涨跌越敏感（双向 beta）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无宽基持仓则归零；分类口径改变（如兜底规则变更）会直接改变该因子的构成。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/broad_dividend",
@@ -126,9 +126,9 @@
                                         "direction":  "该因子暴露越高，组合对利率下行与低波风格的资金流入越敏感（正向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无红利低波持仓则归零；若该腿的驱动因素转为成长再评级，则归类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/duration",
@@ -138,9 +138,9 @@
                                         "direction":  "该因子暴露越高，组合对利率上行越敏感（负向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无债券持仓则归零；当前 26 条持仓无一携带 modifiedDuration 字段，故 H4/D1 久期规则实际未运行（见 _unknowns）。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure/liquidity",
@@ -150,9 +150,9 @@
                                         "direction":  "该因子暴露越高，组合在市场下行时的机动性越强（正向=防御）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若现金被全部投出则归零。注意：H3 流动性规则用的是人工入参 liquidityPct，与 cash/wealth 无关，两者不可混用（见 _unknowns）。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/real_rate",
@@ -162,9 +162,9 @@
                                         "direction":  "该因子暴露越高，组合对实际利率上行的敏感度越高（负向暴露）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若四个桶全部清空则归零；若黄金与成长的实际利率敏感度不同号（例如黄金转为避险主导），合并前提失效，该口径需拆开。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/inflation_commodity",
@@ -174,9 +174,9 @@
                                         "direction":  "该因子暴露越高，组合对通胀上行越受益（正向暴露）、对通胀压制估值的其他腿有对冲效应。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无 resource 桶持仓则归零；若该腿的定价逻辑转为非通胀（如产能政策主导），该分类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/policy_green",
@@ -186,9 +186,9 @@
                                         "direction":  "该因子暴露越高，组合对绿色政策边际变化越敏感（双向）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无 green_power 桶持仓则归零；若政策驱动转为市场化电价驱动，该分类失效。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/broad_beta",
@@ -198,9 +198,9 @@
                                         "direction":  "该因子暴露越高，组合对市场整体涨跌越敏感（双向 beta）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若 broad 与 dividend 两桶皆空则归零；若红利腿的驱动完全独立于宽基 beta，该合并前提需重审。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/duration",
@@ -210,9 +210,9 @@
                                         "direction":  "该因子暴露越高，组合对利率上行越敏感（负向暴露）、对利率下行越受益。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若无债券持仓则归零；当前持仓缺 modifiedDuration，无法量化久期长度，该因子只能定性使用。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "exposure-causal/liquidity",
@@ -222,9 +222,9 @@
                                         "direction":  "该因子暴露越高，组合在冲击期的机动性越强（正向=防御）。",
                                         "updateFrequency":  "随持仓快照刷新而更新。",
                                         "invalidation":  "若现金归零则该因子消失。注意与 H3 流动性阈值（人工入参 liquidityPct）不是同一口径，不可互相替代。",
-                                        "correlations":  [
+                                        "correlations":  {
 
-                                                         ]
+                                                         }
                                     },
                                     {
                                         "id":  "predictive/F1_OIL",
@@ -1420,27 +1420,21 @@
                                              "name":  "财联社（cls.cn）",
                                              "tier":  "B",
                                              "note":  "国内财经快讯；实测 100 条（去重后）。公告口径类消息为一手，但其评论为二手",
-                                             "observedSources":  [
-                                                                     "NewsNow/cls"
-                                                                 ]
+                                             "observedSources":  "NewsNow/cls"
                                          },
                                          {
                                              "id":  "wallstreetcn",
                                              "name":  "华尔街见闻（wallstreetcn.com）",
                                              "tier":  "B",
                                              "note":  "国内财经快讯转载源；实测 111 条（去重后）",
-                                             "observedSources":  [
-                                                                     "NewsNow/wallstreetcn"
-                                                                 ]
+                                             "observedSources":  "NewsNow/wallstreetcn"
                                          },
                                          {
                                              "id":  "cnbc",
                                              "name":  "CNBC",
                                              "tier":  "B",
                                              "note":  "主流财经媒体；实测 75 条",
-                                             "observedSources":  [
-                                                                     "CNBC Top News"
-                                                                 ]
+                                             "observedSources":  "CNBC Top News"
                                          },
                                          {
                                              "id":  "wsj",
@@ -1459,54 +1453,42 @@
                                              "name":  "Reuters",
                                              "tier":  "B",
                                              "note":  "主流财经媒体；实测 37 条",
-                                             "observedSources":  [
-                                                                     "Reuters (Google News)"
-                                                                 ]
+                                             "observedSources":  "Reuters (Google News)"
                                          },
                                          {
                                              "id":  "ft",
                                              "name":  "Financial Times",
                                              "tier":  "B",
                                              "note":  "主流财经媒体；实测 13 条",
-                                             "observedSources":  [
-                                                                     "Financial Times"
-                                                                 ]
+                                             "observedSources":  "Financial Times"
                                          },
                                          {
                                              "id":  "guardian",
                                              "name":  "The Guardian Business",
                                              "tier":  "C",
                                              "note":  "聚合/二手转载；实测 10 条",
-                                             "observedSources":  [
-                                                                     "Guardian Business"
-                                                                 ]
+                                             "observedSources":  "Guardian Business"
                                          },
                                          {
                                              "id":  "times",
                                              "name":  "The Times",
                                              "tier":  "C",
                                              "note":  "聚合/二手转载；实测 1 条",
-                                             "observedSources":  [
-                                                                     "The Times (Google News)"
-                                                                 ]
+                                             "observedSources":  "The Times (Google News)"
                                          },
                                          {
                                              "id":  "arxiv",
                                              "name":  "arXiv cs.AI",
                                              "tier":  "C",
                                              "note":  "论文预印本，非市场事实；本次全部排除出映射（实测 19 条）",
-                                             "observedSources":  [
-                                                                     "arXiv cs.AI"
-                                                                 ]
+                                             "observedSources":  "arXiv cs.AI"
                                          },
                                          {
                                              "id":  "hn",
                                              "name":  "Hacker News",
                                              "tier":  "D",
                                              "note":  "未核实/单一来源聚合；本次全部排除出映射（实测 17 条）",
-                                             "observedSources":  [
-                                                                     "Hacker News"
-                                                                 ]
+                                             "observedSources":  "Hacker News"
                                          },
                                          {
                                              "id":  "sspl",
@@ -1527,9 +1509,9 @@
                                               "severity":  "high",
                                               "status":  "已声明、未执行",
                                               "title":  "10-25 减仓执行单由推演结论直接产出，当前违反 tradeGate",
-                                              "detail":  "E:\\q4-2026\\reports\\减仓执行单-2026-10-25.md（18,176 B）由链式推演结论直接产出（黄金腿减 12,000.00 + 成长腿减 6,656.00，商品腿不动；10/26 周一开盘后尽快），未经过独立的交易闸门。该执行单同时与 P9 的 FAIL、以及执行单 §五规则二的日期口径分歧（A 常设条件式 / B 仅对 10/26 有效而已过期）绑在一起。",
+                                              "detail":  "[已移除] B）由链式推演结论直接产出（黄金腿减 [金额已移除] + 成长腿减 [金额已移除]，商品腿不动；10/26 周一开盘后尽快），未经过独立的交易闸门。该执行单同时与 P9 的 FAIL、以及执行单 §五规则二的日期口径分歧（A 常设条件式 / B 仅对 10/26 有效而已过期）绑在一起。",
                                               "violates":  "tradeGate.mayTriggerTrade = false；PROJECT.md §7.5 第 2 条",
-                                              "source":  "E:\\investment-os\\PROJECT.md §7.5 第 2 条（原文：『⚠ 当前状态：违反。……本条已声明但未执行，如实记录，不粉饰。』）",
+                                              "source":  "[已移除] §7.5 第 2 条（原文：『⚠ 当前状态：违反。……本条已声明但未执行，如实记录，不粉饰。』）",
                                               "remediation":  "未执行。契约只是把该状态登记为已知偏离，不代替裁定，也不回改历史执行单。"
                                           },
                                           {
@@ -1537,9 +1519,9 @@
                                               "severity":  "medium",
                                               "status":  "已声明、未执行",
                                               "title":  "推演结论已进入组合权重与持仓传导链",
-                                              "detail":  "chain-model.md §3 权重表（每交易日重标定，规则：新证据同向 ×1.15 / 反向 ×0.75）与 §4 传导矩阵把推演节点直接换算成持仓方向；daily-log §5『持仓传导』与 §7『结论』逐日据此给出减仓金额（如 11-02 的 18,656.00 元、15:00 场外截止窗口）。⇒ 推演事实上在影响仓位决策，而不只是『假设』。",
+                                              "detail":  "chain-model.md §3 权重表（每交易日重标定，规则：新证据同向 ×1.15 / 反向 ×0.75）与 §4 传导矩阵把推演节点直接换算成持仓方向；daily-log §5『持仓传导』与 §7『结论』逐日据此给出减仓金额（如 11-02 的 [金额已移除] 元、15:00 场外截止窗口）。⇒ 推演事实上在影响仓位决策，而不只是『假设』。",
                                               "violates":  "tradeGate.mayTriggerTrade = false（实质上推演已构成交易理由）",
-                                              "source":  "E:\\q4-2026\\reports\\chain-model.md §3 / §4；E:\\q4-2026\\reports\\daily-log\\2026-11-02.md §5 / §7",
+                                              "source":  "[已移除] §3 / §4；[已移除] §5 / §7",
                                               "remediation":  "未执行。与 DEV-01 同源，一并待裁定。"
                                           },
                                           {
@@ -1549,7 +1531,7 @@
                                               "title":  "daily-log 的两段式裁决没有逐跳标注 probability 与 evidence[]",
                                               "detail":  "ERRATA 33 的两段式在 daily-log 里以散文形式记录（段一/段二 + ⇒ 裁决 + ⚠ 口径限定），逐跳的 probability 与结构化 evidence[] 数组并不存在。链式模型里的『权重』是节点权重（N0 0.68→0.78 等），不是单跳的条件概率。⇒ 本契约要求的逐跳 probability / evidence[] 属于新增字段，存量 daily-log 无法直接满足；示例记录是首次按契约结构化的手工转写。",
                                               "violates":  "无（属记录格式的现状说明，非违规）",
-                                              "source":  "E:\\q4-2026\\verify\\ERRATA.md 条目 33 §二；E:\\q4-2026\\reports\\daily-log\\2026-11-02.md §3",
+                                              "source":  "[已移除] 条目 33 §二；[已移除] §3",
                                               "remediation":  "不追溯改写 daily-log（PROJECT.md §4：封存件不改、勘误只追加）。新推演一律按本契约结构化。"
                                           },
                                           {
@@ -1559,7 +1541,7 @@
                                               "title":  "事后校准命中率无系统性闭环",
                                               "detail":  "契约要求『所有推演进入日志，事后校准命中率』。当前只有封存预注册件（sealed\\forecast-v1.0.md 的 P1–P22）有完整 Brier 记分通道；daily-log 的日常推演没有命中率统计口径，没有『多少条推演被事后证伪』的账。⇒ 本契约的 calibration 段目前只有 P21 一个真实范例可依据，其余推演的记分通道尚未建立。",
                                               "violates":  "calibration.reviewCycle 尚未有实现载体",
-                                              "source":  "E:\\q4-2026\\sealed\\forecast-v1.0.md §0 反污染协议；E:\\q4-2026\\verify\\ERRATA.md（P21 Brier = 0.6400 记于条目 35 前后与 §四.5 统计）",
+                                              "source":  "[已移除] §0 反污染协议；[已移除] Brier = 0.6400 记于条目 35 前后与 §四.5 统计）",
                                               "remediation":  "未执行。logPath 下的记录带 reviewDate / outcome 字段，等第一条到期结算。"
                                           }
                                       ],
@@ -1610,7 +1592,7 @@
                                    },
                       "items":  [
                                     {
-                                        "id":  "20261102-P9-现货金-10-30-判定-1",
+                                        "id":  "[金额已移除]-P9-现货金-10-30-判定-1",
                                         "decidedAt":  "2026-11-02T23:43:30+08:00",
                                         "action":  "note",
                                         "subject":  "P9 现货金 10-30 判定",
@@ -1621,18 +1603,18 @@
                                         "supersedes":  null
                                     },
                                     {
-                                        "id":  "20261102-P11-美元指数-10-30-判定-1",
+                                        "id":  "[金额已移除]-P11-美元指数-10-30-判定-1",
                                         "decidedAt":  "2026-11-02T23:43:31+08:00",
                                         "action":  "note",
                                         "subject":  "P11 美元指数 10-30 判定",
-                                        "reason":  "主源 100.UDI 10-30 收 101.97 ∈[100,104.5] ⇒ PASS",
+                                        "reason":  "主源 100.UDI 10-30 收 101.97 ∈[[金额已移除]] ⇒ PASS",
                                         "source":  "cli",
                                         "actor":  "lead",
                                         "dataAsOf":  "2026-10-30",
                                         "supersedes":  null
                                     },
                                     {
-                                        "id":  "20261102-FinHub-公开仓库脱敏-1",
+                                        "id":  "[金额已移除]-FinHub-公开仓库脱敏-1",
                                         "decidedAt":  "2026-11-02T23:43:31+08:00",
                                         "action":  "confirm",
                                         "subject":  "FinHub 公开仓库脱敏",
@@ -1651,22 +1633,11 @@
                                    "currentPct":  35.62,
                                    "authorityPct":  35.92,
                                    "hardMaxPct":  15,
-                                   "totalWealthCny":  89602.02,
-                                   "reduceDerived":  18476.95,
-                                   "reduceAuthority":  18656,
                                    "dataAsOf":  "2026-11-03",
-                                   "dataAgeDays":  0.1,
+                                   "dataAgeDays":  0.2,
                                    "stale":  false,
                                    "note":  "L1 真值：直接由 holdings.json 快照按名称归类算四桶；无快照时才回落 metrics 派生值",
-                                   "source":  "holdings.json（用户上传快照，非推算）",
-                                   "buckets":  {
-                                                   "gold":  21489.22,
-                                                   "equity":  10428.03,
-                                                   "bond":  6897.56,
-                                                   "bankWealthMgmt":  30156.49,
-                                                   "brokerCashMgmt":  16000,
-                                                   "cash":  4630.72
-                                               }
+                                   "source":  "holdings.json（用户上传快照，非推算）"
                                },
                   "rebalance":  {
                                     "bandLowPct":  8,
@@ -1706,7 +1677,7 @@
                                     {
                                         "item":  "持仓快照 holdings.json",
                                         "asOf":  "2026-11-03",
-                                        "ageDays":  0.1,
+                                        "ageDays":  0.2,
                                         "stale":  false
                                     },
                                     {
@@ -1717,13 +1688,194 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-03 22:00",
+                                        "asOf":  "2026-11-03 22:38",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
                                 ]
               },
-    "_missing":  [
+    "_missing":  {
 
-                 ]
+                 },
+    "_publicPolicy":  {
+                          "sanitizer":  "tools/export-board-public.ps1",
+                          "dropsAmounts":  true,
+                          "droppedCategories":  "绝对金额 / 持仓明细字段 / 内部路径 / 隧道地址 / 决策金额",
+                          "rationale":  "公开页面只放比例/计数/状态；绝对金额与内部路径、隧道地址一律不出口",
+                          "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
+                      },
+    "_freshness":  {
+                       "checkedAt":  "2026-11-03 22:38:27",
+                       "worst":  "ok",
+                       "staleCount":  0,
+                       "items":  [
+                                     {
+                                         "id":  "holdings",
+                                         "label":  "持仓快照",
+                                         "asOf":  "2026-11-03 18:38",
+                                         "ageDays":  0.17,
+                                         "maxAgeDays":  3,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "engine-policy",
+                                         "label":  "引擎政策契约",
+                                         "asOf":  "2026-11-02 22:58",
+                                         "ageDays":  0.99,
+                                         "maxAgeDays":  14,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "factor-registry",
+                                         "label":  "因子登记表",
+                                         "asOf":  "2026-11-02 23:27",
+                                         "ageDays":  0.97,
+                                         "maxAgeDays":  30,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "news-mapping",
+                                         "label":  "新闻映射",
+                                         "asOf":  "2026-11-02 23:26",
+                                         "ageDays":  0.97,
+                                         "maxAgeDays":  30,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "chain-rules",
+                                         "label":  "推演规则",
+                                         "asOf":  "2026-11-02 23:23",
+                                         "ageDays":  0.97,
+                                         "maxAgeDays":  30,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "decisions",
+                                         "label":  "决策账本",
+                                         "asOf":  "2026-11-02 23:43",
+                                         "ageDays":  0.95,
+                                         "maxAgeDays":  7,
+                                         "stale":  false
+                                     },
+                                     {
+                                         "id":  "rules",
+                                         "label":  "风控规则",
+                                         "asOf":  "2026-11-03 22:26",
+                                         "ageDays":  0.01,
+                                         "maxAgeDays":  14,
+                                         "stale":  false
+                                     }
+                                 ],
+                       "banner":  "全部数据在有效期内"
+                   },
+    "nationalTeam":  {
+                         "ok":  true,
+                         "lastSuccess":  "2026-11-03 22:30:39",
+                         "asOf":  "2026-11-03 22:30:39",
+                         "note":  "",
+                         "items":  [
+                                       {
+                                           "code":  "512100",
+                                           "name":  "中证1000ETF",
+                                           "shares":  14247217600,
+                                           "deltaShares":  2812000000,
+                                           "deltaPct":  24.59,
+                                           "deltaWan":  281200
+                                       },
+                                       {
+                                           "code":  "510500",
+                                           "name":  "中证500ETF",
+                                           "shares":  7910168600,
+                                           "deltaShares":  1025200000,
+                                           "deltaPct":  14.89,
+                                           "deltaWan":  102520
+                                       },
+                                       {
+                                           "code":  "159845",
+                                           "name":  "159845",
+                                           "shares":  3330425606,
+                                           "deltaShares":  318000000,
+                                           "deltaPct":  10.56,
+                                           "deltaWan":  31800
+                                       },
+                                       {
+                                           "code":  "510100",
+                                           "name":  "510100",
+                                           "shares":  1081406800,
+                                           "deltaShares":  76500000,
+                                           "deltaPct":  7.61,
+                                           "deltaWan":  7650
+                                       },
+                                       {
+                                           "code":  "510300",
+                                           "name":  "沪深300ETF",
+                                           "shares":  41401387700,
+                                           "deltaShares":  2534400000,
+                                           "deltaPct":  6.52,
+                                           "deltaWan":  253440
+                                       },
+                                       {
+                                           "code":  "588000",
+                                           "name":  "科创50ETF(华夏)",
+                                           "shares":  95612668200,
+                                           "deltaShares":  5544000000,
+                                           "deltaPct":  6.16,
+                                           "deltaWan":  554400
+                                       },
+                                       {
+                                           "code":  "510050",
+                                           "name":  "上证50ETF",
+                                           "shares":  12866166800,
+                                           "deltaShares":  544500000,
+                                           "deltaPct":  4.42,
+                                           "deltaWan":  54450
+                                       },
+                                       {
+                                           "code":  "510350",
+                                           "name":  "510350",
+                                           "shares":  797514700,
+                                           "deltaShares":  25200000,
+                                           "deltaPct":  3.26,
+                                           "deltaWan":  2520
+                                       }
+                                   ],
+                         "error":  null,
+                         "discipline":  "ETF 份额变化来自全市场申赎，机构/套利/个人共同参与。「净申购=国家队买入」属推断，不得写成确证。",
+                         "dateCurrent":  "2026-11-03",
+                         "datePrev":  "2026-11-02",
+                         "summary":  {
+                                         "total":  22,
+                                         "up":  17,
+                                         "down":  2,
+                                         "flat":  3
+                                     }
+                     },
+    "notifications":  {
+                          "generatedAt":  "2026-11-03 22:38:30",
+                          "count":  2,
+                          "byLevel":  {
+                                          "urgent":  1,
+                                          "watch":  0,
+                                          "info":  1
+                                      },
+                          "items":  [
+                                        {
+                                            "id":  "H2-position-cap",
+                                            "level":  "urgent",
+                                            "title":  "H2 风险仓超上限",
+                                            "body":  "风险仓位超过硬顶，需按 IPS 执行减仓（金额请解锁查看）",
+                                            "rule":  "H2",
+                                            "asOf":  "2026-11-03"
+                                        },
+                                        {
+                                            "id":  "T1-thesis",
+                                            "level":  "info",
+                                            "title":  "T1 投资逻辑已被置否",
+                                            "body":  "基本面/逻辑判定为不成立，减仓理由链仅剩敞口规则",
+                                            "rule":  "T1",
+                                            "asOf":  null
+                                        }
+                                    ],
+                          "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
+                      }
 }

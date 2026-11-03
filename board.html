@@ -181,9 +181,10 @@ function renderChain(d){
     <div>必须回答</div><div class="warn">${esc(r.mustAnswer||'—')}</div>
     <div>是否触发交易</div><div class="${r.mayTriggerTrade?'bad':'ok'}">${r.mayTriggerTrade?'可以（危险）':'不可以，仅生成假设'}</div>
     <div>事后校准</div><div>${esc(r.calibration||'—')}</div></div>`);
-  if (r.knownDeviations && r.knownDeviations.length){
-    h += card('已知偏离（如实登记）', String(r.knownDeviations.length),
-      r.knownDeviations.map(x=>`<div class="err" style="font-size:12px">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
+  const knownDev = (d.chain && d.chain.knownDeviations) ? d.chain.knownDeviations : (r.knownDeviations||[]);
+  if (knownDev && knownDev.length){
+    h += card('已知偏离（如实登记）', String(knownDev.length),
+      knownDev.map(x=>`<div class="err" style="font-size:12px">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
   }
   if (c.example){
     const e = c.example;
@@ -566,7 +567,7 @@ function registerServiceWorker(){
   const swSource = [
     "const CACHE='board-sw-v1';",
     "self.addEventListener('install',e=>{self.skipWaiting();});",
-    "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))).then(()=>self.clients.claim()));});",
+    "self.addEventListener('activate',function(e){ e.waitUntil( caches.keys().then(function(ks){ return Promise.all( ks.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); }) ); }).then(function(){ return self.clients.claim(); }) ); });",
     "self.addEventListener('fetch',e=>{",
     "  const req=e.request;",
     "  if(req.method!=='GET') return;",

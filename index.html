@@ -222,6 +222,7 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
   </header>
   <div id="freshbar" class="freshbar" hidden></div>
+  <div id="autobar" class="freshbar" hidden></div>
   <nav id="modebar">
     <button data-page="live" class="on">实时</button>
     <button data-page="gov">治理</button>
@@ -771,6 +772,29 @@ async function loadExtras(){
   if(window.GOV) window.GOV.render(b);
 }
 function renderExtras(b){
+  /* ── 自动化状态（Harness 定时任务，单向耦合，2026-11-03）── */
+  try{
+    var autoBar=document.getElementById('autobar');
+    if(autoBar){
+      var automation=b&&b.automation;
+      if(!automation){ autoBar.hidden=true; }
+      else{
+        var st=(automation.health&&automation.health.status)||'unknown';
+        var tone=(st==='healthy')?'ok':((st==='failing'||st==='degraded')?'bad':'warn');
+        var labelMap={healthy:'正常',warning:'有警告',degraded:'降级',failing:'失败','never-ran':'从未运行','not-configured':'未配置',unknown:'未知'};
+        var labelText=labelMap[st]||st;
+        var parts=['⚙ 自动化 '+labelText];
+        if(automation.stats){ parts.push('近'+automation.stats.total+'次 OK'+automation.stats.ok+'/WARN'+automation.stats.warn+'/FAIL'+automation.stats.fail); }
+        var sched=(automation.schedules&&automation.schedules[0])||null;
+        if(sched&&sched.nextRunAt){ parts.push('下次 '+String(sched.nextRunAt).slice(11,16)); }
+        if(sched&&sched.everySeconds){ parts.push('每 '+(sched.everySeconds/60)+' 分钟'); }
+        autoBar.hidden=false;
+        autoBar.className='freshbar '+tone;
+        autoBar.textContent=parts.join(' · ');
+        if(automation.health&&automation.health.reason){ autoBar.title=automation.health.reason; }
+      }
+    }
+  }catch(autoRenderErr){ /* 自动化状态失败不影响主内容 */ }
   const bar=document.getElementById('freshbar');
   const f=b._freshness;
   if(bar){

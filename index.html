@@ -1483,6 +1483,74 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
   setTimeout(jumpToGov,400);
   setTimeout(jumpToGov,1200);
 })();
+
+/* ── 实时性增强（2026-11-03）──
+   1) 手机切后台时定时器会被节流；切回前台立刻补一次刷新
+   2) 顶部「更新 <时间>」后面持续显示「数据 N 分钟前」，让过期看得见
+   3) 页面隐藏时降频（10 分钟一次），省电
+*/
+(function(){
+  var lastFetchAt = Date.now();
+  var idleTimer = null;
+
+  function refreshNow(){
+    try{
+      if (typeof load === 'function') { load(); }
+      lastFetchAt = Date.now();
+    }catch(refreshErr){ /* 静默：下次定时还会试 */ }
+    try{
+      if (typeof loadExtras === 'function') { loadExtras(); }
+    }catch(extrasErr){ /* 同上 */ }
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible'){
+      var ageMs = Date.now() - lastFetchAt;
+      if (ageMs > 60000) { refreshNow(); }
+      if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+    } else {
+      if (!idleTimer) { idleTimer = setInterval(refreshNow, 600000); }
+    }
+  });
+
+  function humanAge(minutes){
+    if (minutes < 1) { return '刚刚'; }
+    if (minutes < 60) { return Math.floor(minutes) + ' 分钟前'; }
+    var h = Math.floor(minutes / 60);
+    if (h < 24) { return h + ' 小时' + Math.floor(minutes % 60) + ' 分前'; }
+    return Math.floor(h / 24) + ' 天前';
+  }
+
+  function tickAgeLabel(){
+    var genEl = document.getElementById('gen');
+    if (!genEl) { return; }
+    var d = window.__extrasData || (window.__boardData || null);
+    var stamp = d && (d.generatedAt || (d._freshness && d._freshness.checkedAt) || null);
+    if (!stamp) { return; }
+    var parsed = null;
+    try{
+      var normalized = String(stamp).replace('T', ' ').replace(/[+-]\d{2}:\d{2}$/, '');
+      parsed = new Date(normalized.replace(' ', 'T'));
+    }catch(parseErr){ return; }
+    if (!parsed || isNaN(parsed.getTime())) { return; }
+    var minutes = (Date.now() - parsed.getTime()) / 60000;
+    if (minutes < 0) { return; }
+    // 去掉上一轮追加的后缀，避免叠加
+    var base = genEl.textContent.replace(/\s*·\s*数据\s.*$/, '');
+    var color = minutes > 60 ? '#ff5c5c' : (minutes > 15 ? '#ffb340' : '#5a6675');
+    genEl.innerHTML = '';
+    genEl.appendChild(document.createTextNode(base));
+    var span = document.createElement('span');
+    span.style.color = color;
+    span.textContent = ' · 数据 ' + humanAge(minutes);
+    genEl.appendChild(span);
+  }
+
+  setInterval(tickAgeLabel, 30000);
+  setTimeout(tickAgeLabel, 2500);
+  setTimeout(tickAgeLabel, 6000);
+  window.addEventListener('online', refreshNow);
+})();
 </script>
 </body>
 </html>

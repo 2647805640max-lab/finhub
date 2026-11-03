@@ -1464,6 +1464,21 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
   applyMode('live');
 })();
 
+
+/* 深链：?page=gov / #gov 直接进治理视图（便于收藏与验证） */
+(function(){
+  function jumpToGov(){
+    try{
+      if(!/[?&]page=gov/.test(location.search) && location.hash!=='#gov') return;
+      var btn=document.querySelector('#modebar button[data-page="gov"]');
+      if(btn) btn.click();
+    }catch(e){}
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',jumpToGov); }
+  else { jumpToGov(); }
+  setTimeout(jumpToGov,400);
+  setTimeout(jumpToGov,1200);
+})();
 </script>
 </body>
 </html>

@@ -351,7 +351,7 @@ function renderToday(d){
     + '<div>硬顶</div><div>'+pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span></div>'
     + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
     + '<div>总财富</div><div>'+(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')+'</div>'
-    + '<div>需净卖出</div><div>'+(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':'<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span></div>'
++ '<div>需净卖出</div><div>'+(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>'))+'</div>'
     + '<div>数据时点</div><div class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</div></div>'
     + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'

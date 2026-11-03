@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 02:45:24",
+    "generatedAt":  "2026-11-04 02:46:31",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 02:45",
+                                        "asOf":  "2026-11-04 02:46",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 02:45:25",
+                       "checkedAt":  "2026-11-04 02:46:32",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1770,8 +1770,8 @@
                    },
     "nationalTeam":  {
                          "ok":  true,
-                         "lastSuccess":  "2026-11-04 02:30:51",
-                         "asOf":  "2026-11-04 02:30:51",
+                         "lastSuccess":  "2026-11-04 02:45:51",
+                         "asOf":  "2026-11-04 02:45:51",
                          "note":  "",
                          "items":  [
                                        {
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 02:45:26",
+                          "generatedAt":  "2026-11-04 02:46:32",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 02:45:26",
+                       "generatedAt":  "2026-11-04 02:46:33",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2005,12 +2005,6 @@
                                          }
                                      ],
                        "lastRuns":  [
-                                        {
-                                            "at":  "2026-11-03T23:50:44+08:00",
-                                            "overall":  "WARN",
-                                            "durationMs":  153464,
-                                            "dataAgeMin":  2.6
-                                        },
                                         {
                                             "at":  "2026-11-04T00:04:37+08:00",
                                             "overall":  "FAIL",
@@ -2124,6 +2118,12 @@
                                             "overall":  "WARN",
                                             "durationMs":  66154,
                                             "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T02:46:30+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  66963,
+                                            "dataAgeMin":  1.1
                                         }
                                     ],
                        "stats":  {
@@ -2132,7 +2132,7 @@
                                      "warn":  19,
                                      "fail":  1,
                                      "consecutiveBad":  20,
-                                     "lastRunAt":  "2026-11-04T02:45:06+08:00",
+                                     "lastRunAt":  "2026-11-04T02:46:30+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {

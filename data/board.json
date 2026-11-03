@@ -1,6 +1,6 @@
 {
     "schema":  "board/v1",
-    "generatedAt":  "2026-11-04 06:15:35",
+    "generatedAt":  "2026-11-04 06:16:44",
     "generatedBy":  "[已移除]",
     "ips":  {
                 "asOf":  "2026-11-02 22:58:24",
@@ -1688,7 +1688,7 @@
                                     },
                                     {
                                         "item":  "决策账本",
-                                        "asOf":  "2026-11-04 06:15",
+                                        "asOf":  "2026-11-04 06:16",
                                         "ageDays":  0,
                                         "stale":  false
                                     }
@@ -1705,7 +1705,7 @@
                           "fullVersion":  "仅本地 contracts/board.json（不得直接推公开仓）"
                       },
     "_freshness":  {
-                       "checkedAt":  "2026-11-04 06:15:35",
+                       "checkedAt":  "2026-11-04 06:16:45",
                        "worst":  "ok",
                        "staleCount":  0,
                        "items":  [
@@ -1713,7 +1713,7 @@
                                          "id":  "holdings",
                                          "label":  "持仓快照",
                                          "asOf":  "2026-11-03 18:38",
-                                         "ageDays":  0.48,
+                                         "ageDays":  0.49,
                                          "maxAgeDays":  3,
                                          "stale":  false
                                      },
@@ -1770,8 +1770,8 @@
                    },
     "nationalTeam":  {
                          "ok":  true,
-                         "lastSuccess":  "2026-11-04 06:00:58",
-                         "asOf":  "2026-11-04 06:00:58",
+                         "lastSuccess":  "2026-11-04 06:15:58",
+                         "asOf":  "2026-11-04 06:15:58",
                          "note":  "",
                          "items":  [
                                        {
@@ -1963,7 +1963,7 @@
                                      }
                      },
     "notifications":  {
-                          "generatedAt":  "2026-11-04 06:15:36",
+                          "generatedAt":  "2026-11-04 06:16:45",
                           "count":  2,
                           "byLevel":  {
                                           "urgent":  1,
@@ -1991,7 +1991,7 @@
                           "policy":  "通知内容脱敏：不含金额、不含持仓名称；明细需解锁查看"
                       },
     "automation":  {
-                       "generatedAt":  "2026-11-04 06:15:36",
+                       "generatedAt":  "2026-11-04 06:16:46",
                        "source":  "harness schedule store + _audit/refresh-log.jsonl",
                        "note":  "单向耦合：Harness 定时任务 → 本文件 → board.json → 页面。页面无法反向触发任务。",
                        "schedules":  [
@@ -2005,18 +2005,6 @@
                                          }
                                      ],
                        "lastRuns":  [
-                                        {
-                                            "at":  "2026-11-04T02:27:02+08:00",
-                                            "overall":  "WARN",
-                                            "durationMs":  68502,
-                                            "dataAgeMin":  1.1
-                                        },
-                                        {
-                                            "at":  "2026-11-04T02:28:09+08:00",
-                                            "overall":  "WARN",
-                                            "durationMs":  66758,
-                                            "dataAgeMin":  1.1
-                                        },
                                         {
                                             "at":  "2026-11-04T02:29:34+08:00",
                                             "overall":  "WARN",
@@ -2124,6 +2112,18 @@
                                             "overall":  "WARN",
                                             "durationMs":  3021,
                                             "dataAgeMin":  0
+                                        },
+                                        {
+                                            "at":  "2026-11-04T06:16:39+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  65818,
+                                            "dataAgeMin":  1.1
+                                        },
+                                        {
+                                            "at":  "2026-11-04T06:16:43+08:00",
+                                            "overall":  "WARN",
+                                            "durationMs":  3161,
+                                            "dataAgeMin":  0
                                         }
                                     ],
                        "stats":  {
@@ -2132,7 +2132,7 @@
                                      "warn":  20,
                                      "fail":  0,
                                      "consecutiveBad":  20,
-                                     "lastRunAt":  "2026-11-04T06:15:22+08:00",
+                                     "lastRunAt":  "2026-11-04T06:16:43+08:00",
                                      "lastOverall":  "WARN"
                                  },
                        "health":  {

@@ -1342,13 +1342,14 @@ function renderAudit(d){
   govQuery('#s-audit').innerHTML = h;
 }
 // ── 加载 ──
-// 三源降级（先到先得，每个带 ?_=Date.now() 破缓存）：
-//   1) ./data/board.json  同域 Pages 自托管，40 秒内刷新（绕开 CDN 滞后）
-//   2) raw.githubusercontent.com 公开仓库兜底
+// 三源降级（2026-11-04 轻量化后源序：finhub-data raw 优先 → localStorage 上次成功数据）
+//   1) raw.githubusercontent.com 公开数据仓 —— S4 每 30 分钟覆盖（最多 ~5 分钟 CDN 时差）
+//   2) ./data/board.json   Pages 自托管兜底（2026-11-04 起 S4 不再往 finhub 仓推 board.json，
+//                          该文件会逐渐变旧，仅作 Pages 自托管可用性兜底）
 //   3) localStorage 上次成功数据（离线可读）
 // 全部失败 → 显示错误 + 「上次成功时间」，绝不显示成 0 或空成功。
-const BOARD_SOURCE_SELF  = './data/board.json';
 const BOARD_SOURCE_RAW   = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
+const BOARD_SOURCE_SELF  = './data/board.json';
 const BOARD_CACHE_KEY    = 'board.cache.v1';
 const BOARD_CACHE_META   = 'board.cache.meta.v1';
 
@@ -1389,7 +1390,7 @@ async function fetchOne(url){
 // 返回 { d, src, fromCache, lastSuccessAt, errors }
 async function fetchBoard(){
   const errors = [];
-  const candidates = [BOARD_SOURCE_SELF, BOARD_SOURCE_RAW];
+  const candidates = [BOARD_SOURCE_RAW, BOARD_SOURCE_SELF];
   for (const u of candidates){
     try{
       const d = await fetchOne(u);

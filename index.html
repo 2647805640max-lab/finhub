@@ -314,11 +314,12 @@ const cls=v=>v>0?'up':(v<0?'dn':'fl');
 const signedPct=v=>(v>0?'+':'')+v.toFixed(2)+'%';
 const num=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
 
-/* 基线数据源：jsDelivr 的 @main 会在推送后很快刷新，raw.githubusercontent 的 main 分支
-   会被 CDN 缓存好几分钟（实测 5 分钟以上）——两个都试，先到先得。 */
+/* 基线数据源（2026-11-04 23:40 实测修正）：jsDelivr @main 曾实测 stale 12 小时
+   （同 commit jsDelivr 给 11:29、raw 给 23:04）——不要再把 jsDelivr 放首位。
+   raw.githubusercontent 对 main 的缓存最长数分钟；隧道 live 才是真正的实时通道。 */
 const DATA_REMOTES=[
-  'https://cdn.jsdelivr.net/gh/2647805640max-lab/finhub-data@main/state.json',
-  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/state.json'
+  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/state.json',
+  'https://cdn.jsdelivr.net/gh/2647805640max-lab/finhub-data@main/state.json'
 ];
 const DATA_LOCAL='data/state.json';
 let lastSource='';
@@ -776,7 +777,7 @@ function render(s){
 function classifyTier2(){
   /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」；其余卡 (含 xcard) tier2 折叠 */
   try{
-    const keep=/^(大盘裁决|个人层)/;
+    const keep=/^(大盘裁决|个人层|今日信号卡|我的持仓|告警)/;
     [...pick('#app').querySelectorAll('.card, .xcard')].forEach(c=>{
       const het=((c.querySelector('h2, h3')||{}).textContent||'');
       if(!keep.test(het)) c.classList.add('tier2');
@@ -857,9 +858,11 @@ load(); setInterval(load,60000);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* ── 治理扩展（2026-11-03）：时效 / 国家队 / 通知 / 看板入口 ──
    复用 board.html 已生成的 board.json；不改 state.json 契约，不动原有渲染。 */
+/* 2026-11-04 P0-3 源序反转：自托管 data/board.json 已不被 S4 推送，会无限期放旧。
+   顺序改为 raw 优先（S4 每 30 分钟覆盖），自托管变兜底（会变旧）。 */
 const EXTRAS_SOURCES=[
-  'data/board.json',
-  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json'
+  'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json',
+  'data/board.json'
 ];
 async function loadExtras(){
   let b=null;
@@ -1415,7 +1418,7 @@ async function fetchBoard(){
 
 let LAST_LOAD_ERRORS = [];
 async function load(){
-  govQuery('#gen').textContent = '加载 board.json …';
+  govQuery('#govGen').textContent = '加载 board.json …';
   try{
     const got = await fetchBoard();
     LAST_LOAD_ERRORS = got.errors || [];
@@ -1423,18 +1426,18 @@ async function load(){
       const lastTxt = got.lastSuccessAt
         ? ('上次成功时间：' + got.lastSuccessAt)
         : '上次成功时间：无（此前从未成功加载过）';
-      govQuery('#gen').innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>'
+      govQuery('#govGen').innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>'
         + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>'
         + '<div class="dim" style="font-size:11px">失败明细：' + esc((LAST_LOAD_ERRORS.join(' | ')) || '未知') + '</div>'
         + '<div class="dim" style="font-size:11px">点右下角刷新重试。</div>';
-      govQuery('#src').textContent = 'board.json · 读取失败';
+      govQuery('#govSrc').textContent = 'board.json · 读取失败';
       return;
     }
     const d = got.d;
-    govQuery('#ver').textContent = d.schema || 'board/v1';
+    govQuery('#govVer').textContent = d.schema || 'board/v1';
     const srcLabel = got.fromCache ? ('离线缓存 · ' + got.src) : got.src;
-    govQuery('#gen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;
-    govQuery('#src').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
+    govQuery('#govGen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;
+    govQuery('#govSrc').textContent = 'board.json · ' + ((d.generatedAt||'').slice(0,16));
     window.__boardData = d;
     window.__boardMeta = got;
     updateFreshnessBanner(d);
@@ -1450,7 +1453,7 @@ async function load(){
     renderAudit(d); renderWatch(d); renderNationalTeamPage(d); renderSettings(d);
   }catch(e){
     const lastTxt = cacheMetaTime() ? ('上次成功时间：' + cacheMetaTime()) : '上次成功时间：无（此前从未成功加载过）';
-    govQuery('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
+    govQuery('#govGen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
       + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>';
   }
 }
@@ -1703,6 +1706,22 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
         $('#hmsg').innerHTML='<div style="color:var(--ok)">✓ 已入 VPS ledger：'+(j.platform||platform)+' '
           +(j.date||date)+' · '+j.itemCount+' 标的 · 合计 '+j.totalCny+' 元。'
           +'PC 下一轮（≤30 分钟）自动回拉到本地 finwatch。</div>';
+        /* 2026-11-04 P0-B 闭环反馈：读取 audit.jsonl 尾部留痕，把 kind=holdings 那条
+           实时打出来，用户马上就能看到「VPS 确实写了、写的是什么」。 */
+        try{
+          const r2=await fetch(window.__fhLastRoot+'/data/audit.jsonl?_=' + Date.now(),
+            {cache:'no-store', headers:{'X-FH-Key':window.__fhKeyGet()}});
+          if(!r2.ok) throw new Error('audit.jsonl fetched '+r2.status);
+          const tail=(await r2.text()).trim().split('\n').filter(Boolean).slice(-8).reverse();
+          const hits=tail.map(l=>{try{return JSON.parse(l)}catch(e){return null}})
+            .filter(Boolean).filter(x=>x._kind==='holdings');
+          if(hits.length){
+            const h=hits[0];
+            $('#hmsg').innerHTML+='<div class="note" style="margin-top:6px">留痕核对：'
+              +(h.ts||'')+' 平台「'+(h.platform||'')+'」·'+(h.items||0)+' 标的·合计 '+(h.total||'')+' 元 '
+              +(h._src?('from ' + h._src):'')+'</div>';
+          }
+        }catch(e){ /* 不阻塞，audit 拿不到就保持第一次的绿条提示 */ }
       }else{
         const why=(j&&j.error)?j.error:(('HTTP '+(r.status||'?')));
         $('#hmsg').innerHTML='<div class="err">提交被拒：'+why+'</div>';
@@ -1728,11 +1747,19 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
       return;
     }
   }, true);
-  /* ② 一级屏「显示更多」开关（modebar 里的小 checkbox） */
+  /* ② 一级屏「显示更多」开关（modebar 里的小 checkbox）＋ localStorage 持久化 */
   const _t2=document.getElementById('t2show');
-  if(_t2) _t2.addEventListener('change', function(){
-    document.body.classList.toggle('showall', this.checked);
-  });
+  if(_t2){
+    try{
+      const saved=localStorage.getItem('fh.showall');
+      if(saved==='1'){ _t2.checked=true; document.body.classList.add('showall'); }
+      else if(saved==='0'){ _t2.checked=false; document.body.classList.remove('showall'); }
+    }catch(e){}
+    _t2.addEventListener('change', function(){
+      document.body.classList.toggle('showall', this.checked);
+      try{ localStorage.setItem('fh.showall', this.checked?'1':'0'); }catch(e){}
+    });
+  }
 })();
 
 

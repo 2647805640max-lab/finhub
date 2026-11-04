@@ -213,6 +213,11 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 
 /* ── 双横幅修复：治理页内部横幅隐藏，只保留顶部 #freshbar ── */
 #page-gov #govfreshbar, #govfreshbar{ display:none !important; }
+#marketbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;font-variant-numeric:tabular-nums}
+#marketbar .mk{white-space:nowrap}
+#marketbar .mk b{font-weight:600}
+#marketbar .up{color:#ff5c5c}
+#marketbar .dn{color:#2ecc71}
 </style>
 </head>
 <body>
@@ -222,6 +227,7 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
     <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#5a6675"></div></div>
   </header>
   <div id="freshbar" class="freshbar" hidden></div>
+  <div id="marketbar" class="freshbar marketbar" hidden></div>
   <div id="autobar" class="freshbar" hidden></div>
   <nav id="modebar">
     <button data-page="live" class="on">实时</button>
@@ -772,6 +778,46 @@ async function loadExtras(){
   if(window.GOV) window.GOV.render(b);
 }
 function renderExtras(b){
+  /* ── 行情条（2026-11-04 新增：ingest-market 采集 → board.json.market → 这里）── */
+  try{
+    var marketBar=document.getElementById('marketbar');
+    if(marketBar){
+      var market=b&&b.market;
+      if(!market||!market.sources){ marketBar.hidden=true; }
+      else{
+        var parts=[];
+        var idx=market.sources.indices;
+        if(idx&&idx.ok&&idx.value&&idx.value.items){
+          idx.value.items.forEach(function(it){
+            if(!it||it.price==null) return;
+            var pct=(it.changePct==null)?null:it.changePct;
+            var cls=pct==null?'':(pct>0?'up':(pct<0?'dn':''));
+            var sign=(pct==null)?'':((pct>0?'+':'')+pct.toFixed(2)+'%');
+            parts.push('<span class="mk">'+String(it.name||it.code)+' <b>'+Number(it.price).toFixed(2)+'</b> <span class="'+cls+'">'+sign+'</span></span>');
+          });
+        }
+        var extra=[['brent','布伦特'],['gold','黄金'],['usdcny','USDCNY']];
+        extra.forEach(function(pair){
+          var src=market.sources[pair[0]];
+          if(src&&src.ok&&src.value&&src.value.price!=null){
+            parts.push('<span class="mk">'+pair[1]+' <b>'+src.value.price+'</b></span>');
+          }
+        });
+        if(parts.length===0){ marketBar.hidden=true; }
+        else{
+          var misses=[];
+          ['cn10y','us30y'].forEach(function(k){
+            var s=market.sources[k];
+            if(s&&!s.ok) misses.push(k==='cn10y'?'中10Y':'美30Y');
+          });
+          if(misses.length>0){ parts.push('<span class="mk dim" style="opacity:.6">缺：'+misses.join('/')+'</span>'); }
+          marketBar.hidden=false;
+          marketBar.innerHTML=parts.join('');
+          marketBar.title='行情时点 '+(market.generatedAt||'未知');
+        }
+      }
+    }
+  }catch(marketErr){ /* 行情失败不影响主内容 */ }
   /* ── 自动化状态（Harness 定时任务，单向耦合，2026-11-03）── */
   try{
     var autoBar=document.getElementById('autobar');

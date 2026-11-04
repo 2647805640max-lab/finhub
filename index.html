@@ -282,6 +282,19 @@ const DATA_REMOTES=[
 ];
 const DATA_LOCAL='data/state.json';
 let lastSource='';
+/* 2026-11-04 ② 源选择与通告：
+   - 快照多源（jsDelivr / raw.github / Pages 自托管）不再"先到先得"，按 ts 取最新的那个：
+     jsDelivr 的 @main 可被 CDN 缓存 10h+，先到先得会把锁在旧数据上，而头部时间戳又来自
+     另一份契约，造成「更新 21:44 · 数据 8 分钟前」与正文 11:29 的静默错位。
+   - 头部 lastSource 会带「快照 源 时点」，实时源与快照源各自的 asOf 同时可见。 */
+let snapAsOf={};   // 每个源取到的 ts（已格式化）
+let snapSrc='';    // 实际被选中的源名
+function fmtTime(ts){
+  try{ const d=new Date(ts); if(!ts||isNaN(d)) return '—';
+    const p=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }catch(e){ return '—'; }
+}
 let lastAudit=[];      // 最近审计留痕
 let lastRoot='';       // 当前隧道根地址
 let lockState='';      // '' | nokey | bad | offline
@@ -321,13 +334,25 @@ async function load(){
   /* 1) 基线：本机页面优先读本地完整快照；手机读 GitHub raw（含 tunnelUrl） */
   const IS_LOCAL=/^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   const SOURCES=IS_LOCAL?[DATA_LOCAL,...DATA_REMOTES]:[...DATA_REMOTES,DATA_LOCAL];
+  /* 2026-11-04 ②：逐源请求、按 ts 取最新（同 ts 先到者胜）；每个源的时点记进 snapAsOf */
+  const tsof=o=>{ if(!o) return 0; if(o.ts!=null&&!isNaN(Number(o.ts))) return Number(o.ts);
+                  const t=Date.parse(String(o.generatedAt||'').replace(' ','T')); return isNaN(t)?0:t; };
+  const srcname=u=>u.indexOf('cdn.jsdelivr')>=0?'jsDelivr':
+                   (u.indexOf('raw.githubusercontent')>=0?'raw.github':'pages');
+  let bestTsVal=-1;
   for(const u of [...SOURCES.map(x=>x+'?'+bust)]){
-    try{ base=await jget(u); break; }catch(e){ err=e; }
+    try{
+      const c=await jget(u);
+      const t=tsof(c);
+      snapAsOf[srcname(u)]=t?fmtTime(t):'—';
+      if(!base || t>bestTsVal){ base=c; bestTsVal=t; snapSrc=srcname(u); }
+    }catch(e){ err=e; }
   }
   if(!base){
     pick('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
     return;
   }
+
   /* 2) 有隧道地址就直连拿实时（不走 CDN 缓存）
         分层：公开仓库只有市场层；持仓/新闻/告警/链式推演属于个人层，
         只在隧道上（/data/personal.json），且需要口令，绝不回落成公开数据。 */
@@ -352,7 +377,10 @@ async function load(){
   }
   data.__personalOK=personalOK;
   if(!data.tunnelUrl) data.tunnelUrl=base.tunnelUrl;
-  lastSource=src + (personalOK?'':' · 个人层未解锁');
+  /* 2026-11-04 ②：lastSource 带上快照源与时点，实时/快照两个 asOf 同屏可见 */
+  lastSource=src+(snapSrc&&snapAsOf[snapSrc]&&snapAsOf[snapSrc]!=='—'
+    ?('（快照 '+snapSrc+' '+snapAsOf[snapSrc]+'）'):'')
+    +(personalOK?'':' · 个人层未解锁');
 
   render(data);
   loadExtras();
@@ -462,22 +490,34 @@ function render(s){
   }
 
   /* 数据新鲜度：每个因子是否在失效阈值内 */
+  /* 2026-11-04 ②：年龄在浏览器端按当前时间重算，不再用生成时烘进 JSON 的 ageHours——
+     那个值永远停在快照时刻，会把「0h 有效」一直挂到 10 小时后；负数（asOf 晚于
+     generatedAt 的时点超前）也如实展示。 */
   const fzv=s.freshness||{};
   if((fzv.items||[]).length){
-    const cnt=fzv.counts||{};
-    h+=`<div class="card"><h2>数据新鲜度 <span class="tag">${cnt.valid??0}/${cnt.total??0} 有效${fzv.incomplete?' · 有硬缺口':''}</span></h2>`;
+    const nowMs=Date.now();
+    const ageOf=x=>{ if(!x) return null; const p=Date.parse(String(x).replace(' ','T'));
+                     return isNaN(p)?null:(nowMs-p)/36e5; };
+    let vCnt=0; const rows=[];
+    fzv.items.forEach(i=>{
+      const a=ageOf(i.asof);
+      const stale=(a==null)||i.limitHours==null||(a>i.limitHours);
+      if(!stale) vCnt++;
+      rows.push({i, stale, label:(a==null)?'—':(a<0?'超前':a.toFixed(1)+'h')});
+    });
+    h+=`<div class="card"><h2>数据新鲜度 <span class="tag">${vCnt}/${fzv.items.length} 有效${fzv.incomplete?' · 有硬缺口':''} <small>（按当前时间重算）</small></span></h2>`;
     if((fzv.gaps||[]).length){
       h+=`<div class="concl" style="color:var(--warn)">${fzv.gaps.map(g=>'· '+g.name+'：'+g.reason).join('<br>')}</div>`;
     }
     h+='<table>';
-    fzv.items.forEach(i=>{
-      const c=i.valid?'var(--dim)':'var(--warn)';
-      h+=`<tr><td>${i.valid?'✅':'⚠️'} ${i.name}</td>
-        <td style="text-align:right;color:${c}">${i.asof||'—'}</td>
-        <td style="text-align:right;color:${c}">${i.ageHours==null?'—':i.ageHours+'h'}</td>
-        <td style="text-align:right;color:#5a6675">${i.limitHours}h</td></tr>`;
+    rows.forEach(r=>{
+      const c=r.stale?'var(--warn)':'var(--dim)';
+      h+=`<tr><td>${r.stale?'⚠️':'✅'} ${r.i.name}</td>
+        <td style="text-align:right;color:${c}">${r.i.asof||'—'}</td>
+        <td style="text-align:right;color:${c}">${r.label}</td>
+        <td style="text-align:right;color:#5a6675">${r.i.limitHours}h</td></tr>`;
     });
-    h+='</table><div class="note">阈值写在 factor_registry.py。超过阈值的因子被强制归零票，不再冒充新信号；缺口同时写入 data/gaps.jsonl 留痕。</div></div>';
+    h+='</table><div class="note">阈值写在 factor_registry.py。超过阈值的因子被强制归零票，不再冒充新信号；缺口同时写入 data/gaps.jsonl 留痕。年龄列 = 当前时间 − asOf，浏览器每 60 秒重算。</div></div>';
   }
 
   const f2=b.F2||{},f3=b.F3||{},oil=c.OIL||{},cl=c.CL||{},xau=c.XAU||{};

@@ -1770,19 +1770,22 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
 })();
 
 
-/* 深链：?page=gov / #gov 直接进治理视图（便于收藏与验证） */
+/* 深链：?page=gov / #gov / ?page=hold / #hold 直接进对应 mode（PWA shortcuts 用） */
 (function(){
-  function jumpToGov(){
+  function jumpToMode(){
     try{
-      if(!/[?&]page=gov/.test(location.search) && location.hash!=='#gov') return;
-      var btn=document.querySelector('#modebar button[data-page="gov"]');
+      var target = null;
+      if(/[?&]page=gov/.test(location.search) || location.hash==='#gov')       target='gov';
+      else if(/[?&]page=hold/.test(location.search) || location.hash==='#hold') target='hold';
+      if(!target) return;
+      var btn=document.querySelector('#modebar button[data-page="'+target+'"]');
       if(btn) btn.click();
     }catch(e){}
   }
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',jumpToGov); }
-  else { jumpToGov(); }
-  setTimeout(jumpToGov,400);
-  setTimeout(jumpToGov,1200);
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',jumpToMode); }
+  else { jumpToMode(); }
+  setTimeout(jumpToMode,400);
+  setTimeout(jumpToMode,1200);
 })();
 
 /* ── 实时性增强（2026-11-03）──

@@ -8,7 +8,10 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0a0e14",
   "theme_color": "#0a0e14",
   "orientation": "portrait",
@@ -36,6 +39,44 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "持仓上传",
+      "short_name": "上传",
+      "description": "粘贴持仓快照到 VPS",
+      "url": "/finhub/?page=hold",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "治理看板",
+      "short_name": "治理",
+      "description": "IPS / 因子 / 新闻 / 推演 / 审计",
+      "url": "/finhub/?page=gov",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "实时",
+      "short_name": "实时",
+      "description": "行情 / 三因子 / 大盘裁决",
+      "url": "/finhub/?page=live",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

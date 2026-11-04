@@ -769,15 +769,19 @@ function render(s){
   /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」两张卡；
      其余卡标 tier2 折叠——展开开关在 modebar（显示更多），或直接跳 board.html 详情看板。
      关键信息不缺：header 行情条 + _freshness 绿横幅 + 大盘裁决本身都在。 */
+  classifyTier2();
+  pick('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
+  document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+}
+function classifyTier2(){
+  /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」；其余卡 (含 xcard) tier2 折叠 */
   try{
     const keep=/^(大盘裁决|个人层)/;
     [...pick('#app').querySelectorAll('.card, .xcard')].forEach(c=>{
-      const t=((c.querySelector('h2, h3')||{}).textContent||'');
-      if(!keep.test(t)) c.classList.add('tier2');
+      const het=((c.querySelector('h2, h3')||{}).textContent||'');
+      if(!keep.test(het)) c.classList.add('tier2');
     });
   }catch(e){}
-  pick('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
-  document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
 function bar(lab,v,max,col){
   const pct=Math.max(0,Math.min(100,(v||0)/max*100));
@@ -983,6 +987,7 @@ function renderExtras(b){
    +'<div class="xnote">配置仪表 / 因子信号 / 新闻事件 / 推演假设 / 观察清单 / 审计留痕</div>'
    +'<a class="xbtn" href="board.html">打开治理看板 →</a></div>';
   app.innerHTML+=x;
+  classifyTier2();
 }
 function askNotify(){
   const el=document.getElementById('notifyState');

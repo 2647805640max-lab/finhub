@@ -166,8 +166,8 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .t2toggle{color:var(--dim);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer}
 .t2toggle input{accent-color:var(--acc)}
 /* ② 一级屏收纳：tier2 卡默认收起，勾选「显示更多」或跳 board.html */
-#app > .card.tier2, #app > .xcard.tier2{display:none}
-body.showall #app > .card.tier2, body.showall #app > .xcard.tier2{display:block}
+#app .card.tier2, #app .xcard.tier2{display:none}
+body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
 /* 持仓上传页 */
 #page-hold .kvrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 #page-hold label{font-size:12px;color:var(--dim);display:flex;flex-direction:column;gap:4px}
@@ -771,7 +771,7 @@ function render(s){
      关键信息不缺：header 行情条 + _freshness 绿横幅 + 大盘裁决本身都在。 */
   try{
     const keep=/^(大盘裁决|个人层)/;
-    [...pick('#app').querySelectorAll(':scope > div.card, :scope > div.xcard')].forEach(c=>{
+    [...pick('#app').querySelectorAll('.card, .xcard')].forEach(c=>{
       const t=((c.querySelector('h2, h3')||{}).textContent||'');
       if(!keep.test(t)) c.classList.add('tier2');
     });

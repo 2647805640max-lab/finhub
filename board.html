@@ -71,10 +71,7 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
 <nav id="tabs">
   <button data-t="today" class="on">今日简报</button>
   <button data-t="ips">配置仪表</button>
-  <button data-t="factor">因子信号</button>
-  <button data-t="news">新闻事件</button>
-  <button data-t="chain">推演假设</button>
-  <button data-t="watch">观察清单</button>
+  <button data-t="rules">口径与规则</button>
   <button data-t="audit">审计留痕</button>
   <button data-t="nt">国家队</button>
   <button data-t="settings">设置</button>
@@ -83,11 +80,8 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
 <main>
   <section id="s-today"></section>
   <section id="s-ips" hidden></section>
-  <section id="s-factor" hidden></section>
-  <section id="s-news" hidden></section>
-  <section id="s-chain" hidden></section>
+  <section id="s-rules" hidden></section>
   <section id="s-audit" hidden></section>
-  <section id="s-watch" hidden></section>
   <section id="s-nt" hidden></section>
   <section id="s-settings" hidden></section>
 </main>
@@ -123,6 +117,11 @@ function renderIPS(d){
   $('#s-ips').innerHTML = h;
 }
 
+// ── 口径与规则（2026-11-04 P1-4）：因子登记表 + 新闻事件 + 推演规则 + 待批清单合并 ──
+function renderRules(d){
+  const h = renderFactor(d) + renderNews(d) + renderChain(d) + renderWatch(d);
+  $('#s-rules').innerHTML = h;
+}
 // ── 因子登记 ──
 function renderFactor(d){
   const f = d.factors || {};
@@ -153,7 +152,7 @@ function renderFactor(d){
   if (f.unknowns && f.unknowns.length){
     h += card('未知项', String(f.unknowns.length), f.unknowns.map(u=>`<div class="dim" style="font-size:12px">· ${esc(u)}</div>`).join(''));
   }
-  $('#s-factor').innerHTML = h;
+  return h;
 }
 
 // ── 新闻映射 ──
@@ -168,7 +167,7 @@ function renderNews(d){
       || '<tr><td colspan=4 class="err">contracts 未就绪</td></tr>') + '</tbody></table>');
   const wl = n.sourceWhitelist || [];
   if (wl.length) h += card('来源白名单', wl.length+' 源', `<div>${wl.map(s=>`<span class="pill ${s.tier==='A'?'ok':''}">${esc(s.name||s.id)}</span>`).join('')}</div>`);
-  $('#s-news').innerHTML = h;
+  return h;
 }
 
 // ── 推演规则 ──
@@ -205,7 +204,7 @@ function renderChain(d){
       return `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(c||'')}</div>`;
     })(e.conclusion));
   }
-  $('#s-chain').innerHTML = h;
+  return h;
 }
 
 
@@ -382,8 +381,8 @@ function renderWatch(d){
         + '<div class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</div>'
         + '<div class="dim" style="font-size:11px">归属：'+esc(x.owner||'user')+'</div></div>'; }).join('')
     : '<div class="dim">无</div>');
-  h += card('确认后怎么记', 'cli', '<div class="dim" style="font-size:12px">决定之后用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」里。手机端直接按要等阶段 3 的写入 API。</div>');
-  $('#s-watch').innerHTML = h;
+  h += card('确认后怎么记', 'cli', '<div class="dim" style="font-size:12px">决定的方式：手机上直接按「确认 / 否决 / 备注」（已上线 /api/confirm）；PC 上用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」。</div>');
+  return h;
 }
 
 // ── 设置（静态说明，无伪造开关）──
@@ -405,7 +404,7 @@ function renderSettings(d){
     + '<div>不进公开页</div><div>持仓名称、成本价、amountCny（决策金额）</div>'
     + '<div>原因</div><div>2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史</div>'
     + '<div>金额在哪</div><div>只在本机 _audit\\decisions\\decisions.jsonl</div></div>')
-  + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端还不能直接按「确认」——需要阶段 3 的写入 API</div>'
+  + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端已可直接按「确认」（/api/confirm 已上线，锁卡里确认按钮），留痕见审计 tab</div>'
     + '<div class="err">② 持仓快照过期，简报里仓位是推算值不是实时真值</div>'
     + '<div class="err">③ 系统推送通知依赖 Notification API，部分浏览器/环境不支持</div>');
   $('#s-settings').innerHTML = h;
@@ -536,8 +535,8 @@ async function load(){
         bar.textContent = '离线模式 · 数据时点 ' + (d.generatedAt || '未知');
       }
     }
-    renderToday(d); renderIPS(d); renderFactor(d); renderNews(d); renderChain(d);
-    renderAudit(d); renderWatch(d); renderNationalTeamPage(d); renderSettings(d);
+    renderToday(d); renderIPS(d); renderRules(d);
+    renderAudit(d); renderNationalTeamPage(d); renderSettings(d);
   }catch(e){
     const lastTxt = cacheMetaTime() ? ('上次成功时间：' + cacheMetaTime()) : '上次成功时间：无（此前从未成功加载过）';
     $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
@@ -545,7 +544,7 @@ async function load(){
   }
 }
 
-const TAB_KEYS = ['today','ips','factor','news','chain','watch','audit','nt','settings'];
+const TAB_KEYS = ['today','ips','rules','audit','nt','settings'];
 $('#tabs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.toggle('on', x===b));

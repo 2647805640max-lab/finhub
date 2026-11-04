@@ -161,6 +161,23 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 #modebar button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
   padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer}
 #modebar button.on{background:var(--acc);border-color:var(--acc);color:#04101f}
+#t2bar{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px}
+#golink,#t2bar .golink{color:var(--acc);font-size:12px;text-decoration:none;padding:4px 8px}
+.t2toggle{color:var(--dim);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.t2toggle input{accent-color:var(--acc)}
+/* ② 一级屏收纳：tier2 卡默认收起，勾选「显示更多」或跳 board.html */
+#app > .card.tier2{display:none}
+body.showall #app > .card.tier2{display:block}
+/* 持仓上传页 */
+#page-hold .kvrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+#page-hold label{font-size:12px;color:var(--dim);display:flex;flex-direction:column;gap:4px}
+#page-hold input,#page-hold textarea{background:var(--card2);border:1px solid var(--line);
+  color:var(--txt);border-radius:8px;padding:8px 10px;font:13px/1.5 -apple-system,"PingFang SC",sans-serif}
+#page-hold textarea{width:100%;resize:vertical;font-family:ui-monospace,"JetBrains Mono",Consolas,monospace}
+#page-hold button{background:var(--acc);border:none;color:#04101f;padding:9px 16px;
+  border-radius:8px;font-weight:600;cursor:pointer;font-size:13px}
+#page-hold table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+#page-hold td{padding:5px 0;border-bottom:1px solid var(--line)}
 
 /* ── 治理看板（board.html 合并进来的独有样式，全部限定在 #page-gov 内）── */
 #page-gov{padding:4px 2px 8px}
@@ -232,9 +249,32 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   <nav id="modebar">
     <button data-page="live" class="on">实时</button>
     <button data-page="gov">治理</button>
+    <button data-page="hold">持仓上传</button>
+    <span id="t2bar"><a href="board.html" class="golink">详情看板 →</a>
+      <label class="t2toggle"><input id="t2show" type="checkbox">显示更多</label></span>
   </nav>
   <div id="page-live">
     <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
+  </div>
+  <div id="page-hold" hidden>
+    <div class="card">
+      <h2>持仓快照上传 <span class="tag">粘贴文本 → VPS 校验 → PC 回拉 finwatch</span></h2>
+      <div class="note">每行一个标的：<code>名称 | 代码 | 市值（元）| 类型（可选）| 板块/备注（可选）</code>。同一平台一次传完；金额校验 &gt;0、名称必填。</div>
+      <div class="kvrow">
+        <label>数据日 <input id="hdate" type="date"></label>
+        <label>平台 <input id="hplat" placeholder="支付宝 / 券商 / 银行理财…" maxlength="40"></label>
+        <label>现金（元，可空）<input id="hcash" type="number" min="0" step="0.01" placeholder="0.00"></label>
+      </div>
+      <textarea id="htext" rows="9" spellcheck="false"
+        placeholder="黄金ETF联接C | 002963 | 12038.04 | fund | 黄金&#10;安鑫最低持有360天 |        | 6013.11 | fund | 银行理财"></textarea>
+      <div class="row" style="margin-top:8px;display:flex;gap:8px">
+        <button id="hsubmit" style="flex:1">提交到 VPS</button>
+        <button id="hclear" style="flex:0 0 auto">清空</button>
+      </div>
+      <div class="note" id="hmsg"></div>
+      <div id="hpreview"></div>
+      <div class="note">提交成功后：VPS 立即落盘并写留痕；PC 下一轮采集（30 分钟内）自动回拉到本地 <code>~/.dsh/finwatch/holdings.json</code>。失败行会在这里红标，绝不落半成品。</div>
+    </div>
   </div>
   <div id="page-gov" hidden>
     <div id="govfreshbar" class="freshbar" hidden></div>
@@ -381,6 +421,11 @@ async function load(){
   lastSource=src+(snapSrc&&snapAsOf[snapSrc]&&snapAsOf[snapSrc]!=='—'
     ?('（快照 '+snapSrc+' '+snapAsOf[snapSrc]+'）'):'')
     +(personalOK?'':' · 个人层未解锁');
+  /* 暴露给持仓上传 IIFE 的近端状态：隧道根 + 口令 getter */
+  try{
+    window.__fhLastRoot=lastRoot;
+    window.__fhKeyGet=getKey;
+  }catch(e){}
 
   render(data);
   loadExtras();
@@ -721,6 +766,16 @@ function render(s){
   }
 
   pick('#app').innerHTML=h;
+  /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」两张卡；
+     其余卡标 tier2 折叠——展开开关在 modebar（显示更多），或直接跳 board.html 详情看板。
+     关键信息不缺：header 行情条 + _freshness 绿横幅 + 大盘裁决本身都在。 */
+  try{
+    const keep=/^(大盘裁决|个人层)/;
+    [...pick('#app').querySelectorAll(':scope > div.card')].forEach(c=>{
+      const t=(c.querySelector('h2')||{}).textContent||'';
+      if(!keep.test(t)) c.classList.add('tier2');
+    });
+  }catch(e){}
   pick('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
   document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
@@ -1551,7 +1606,7 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
 /* ── 单页模式切换：实时 / 治理 ── */
 (function(){
   "use strict";
-  const MODES=['live','gov'];
+  const MODES=['live','gov','hold'];
   let currentGovTab='today';
   function applyMode(mode){
     if(MODES.indexOf(mode)<0) mode='live';
@@ -1576,6 +1631,102 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
   }, true);
   window.__fhApplyMode=applyMode;
   applyMode('live');
+})();
+
+/* ═══ 持仓快照上传（2026-11-04）═══
+   流程：粘贴文本前端解析 =行级校验（红标错行）= POST /api/holdings（X-FH-Key）= VPS 落盘 = PC 下轮回拉本地 finwatch。
+   静置 DOM（在 #page-hold 里），不参与 render() 每 60s 重建， zodat 打字内容不会被清空。 */
+(function(){
+  "use strict";
+  const $=s=>document.querySelector(s);
+  const dAttr=d=>d?d:'';
+  // 数据日默认今天（本地时区）
+  const _d=new Date(); const pad=n=>String(n).padStart(2,'0');
+  const today=_d.getFullYear()+'-'+pad(_d.getMonth()+1)+'-'+pad(_d.getDate());
+  try{ $('#hdate').value=today; }catch(e){}
+
+  function parseLines(raw, platformFallback){
+    const out=[]; const errs=[];
+    raw.split(/\r?\n/).forEach((line,idx)=>{
+      const t=line.trim();
+      if(!t) return;
+      const parts=t.split('|').map(x=>x.trim());
+      if(parts.length<3){ errs.push({line:idx+1, text:t, reason:'列数少于 3（名称|代码|市值…）'}); return; }
+      const name=parts[0], code=parts[1]||'', mv=parseFloat(parts[2].replace(/[,，\s]/g,''));
+      if(!name){ errs.push({line:idx+1, text:t, reason:'名称为空'}); return; }
+      if(!(mv>0)){ errs.push({line:idx+1, text:t, reason:'市值不是正数'+ (parts[2]||"")}); return; }
+      out.push({name, code:code||null, marketValue:mv,
+                type:parts[3]||null, sector:parts[4]||null});
+    });
+    return {items:out, errs:errs};
+  }
+  function preview(msg, items, errs, losing){
+    const el=$('#hmsg'); const box=$('#hpreview'); if(!el||!box) return;
+    let errHtml = errs.length?('<div class="concl" style="color:var(--warn)">'
+      + errs.map(e=>'第'+e.line+'行：'+e.reason).map(x=>'· '+x).join('<br>')+'</div>'):'';
+    let previewHtml='';
+    if(items && items.length){
+      const total=items.reduce((a,i)=>a+i.marketValue,0)+losing;
+      previewHtml='<table>'+ items.map(i=>'<tr><td>'+i.name+'</td><td class="r">'
+        + i.marketValue.toFixed(2) + ' 元</td></tr>').join('')
+        + '<tr><td style="color:var(--dim)">合计（含现金）</td><td class="r"><b>'+ total.toFixed(2) +' 元</b></td></tr>'
+        + '</table>';
+    }
+    el.innerHTML=(msg||'')+(errHtml?'<br>'+errHtml:'');
+    box.innerHTML=previewHtml;
+  }
+  async function submit(){
+    const raw=$('#htext').value;
+    if(!raw.trim()){ preview('贴了再说。'); return; }
+    const date=$('#hdate').value||today;
+    const platform=($('#hplat').value||'').trim();
+    const cash=parseFloat(($('#hcash').value||'0').replace(/[,，\s]/g,''))||0;
+    if(!platform){ preview('平台必填（支付宝 / 券商 / 银行理财 …）。'); return; }
+    const {items,errs}=parseLines(raw, platform);
+    if(!items.length){ preview('没有可提交的行。'); return; }
+    preview('待提交 '+items.length+' 行'+(errs.length?(' · 有 '+errs.length+' 行错误（仍可提交正确行）'):''), items, errs, cash);
+    if(!window.__fhLastRoot){ $('#hmsg').innerHTML='<div class="err">隧道不可达（实时源尚未连上）。等 load 拿到 tunnelUrl 后再试。</div>'; return; }
+    if(!window.__fhKeyGet || !window.__fhKeyGet()){ $('#hmsg').innerHTML='<div class="err">先解锁（口令未设置/无效）。</div>'; return; }
+    $('#hsubmit').disabled=true; $('#hmsg').innerHTML='<div class="note">提交中…</div>';
+    try{
+      const r=await fetch(window.__fhLastRoot+'/api/holdings',
+        {method:'POST', headers:{'X-FH-Key':window.__fhKeyGet(),'Content-Type':'application/json'},
+         body:JSON.stringify({date, platform, cash, items, note:''})});
+      const j=await r.json().catch(()=>null);
+      if(r.ok && j && j.ok){
+        $('#hmsg').innerHTML='<div style="color:var(--ok)">✓ 已入 VPS ledger：'+(j.platform||platform)+' '
+          +(j.date||date)+' · '+j.itemCount+' 标的 · 合计 '+j.totalCny+' 元。'
+          +'PC 下一轮（≤30 分钟）自动回拉到本地 finwatch。</div>';
+      }else{
+        const why=(j&&j.error)?j.error:(('HTTP '+(r.status||'?')));
+        $('#hmsg').innerHTML='<div class="err">提交被拒：'+why+'</div>';
+        preview('', items, errs, cash);
+      }
+    }catch(e){
+      $('#hmsg').innerHTML='<div class="err">提交失败：'+(e&&e.message?e.message:e)+'</div>';
+    }finally{ $('#hsubmit').disabled=false; }
+  }
+  document.addEventListener('input', function(ev){
+    if(ev.target && ev.target.id==='htext'){ /* 触发即时预览（不提交） */
+      const {items,errs}=parseLines(ev.target.value, $('#hplat').value);
+      const cash=parseFloat(($('#hcash').value||'0').replace(/[,，\s]/g,''))||0;
+      preview(null, items, errs, cash);
+    }
+  }, true);
+  document.addEventListener('click', function(ev){
+    const t=ev.target;
+    if(t && t.id==='hsubmit'){ ev.preventDefault(); submit(); return; }
+    if(t && t.id==='hclear'){
+      ev.preventDefault();
+      $('#htext').value=''; $('#hpreview').innerHTML=''; $('#hmsg').textContent='';
+      return;
+    }
+  }, true);
+  /* ② 一级屏「显示更多」开关（modebar 里的小 checkbox） */
+  const _t2=document.getElementById('t2show');
+  if(_t2) _t2.addEventListener('change', function(){
+    document.body.classList.toggle('showall', this.checked);
+  });
 })();
 
 

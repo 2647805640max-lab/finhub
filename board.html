@@ -395,7 +395,7 @@ function renderSettings(d){
   h += card('数据源', '只读契约', '<div class="kv">'
     + '<div>当前数据源</div><div><b>'+esc(srcNow)+'</b>'
       + (meta.fromCache?' <span class="pill warn">离线/缓存</span>':' <span class="pill ok">在线</span>')+'</div>'
-    + '<div>降级顺序</div><div>① ./data/board.json（Pages 自托管）→ ② raw.githubusercontent.com → ③ localStorage 上次成功数据</div>'
+    + '<div>降级顺序</div><div>① raw.githubusercontent.com（S4 每 30 分钟覆盖）→ ② ./data/board.json 自托管兜底 → ③ localStorage 上次成功数据</div>'
     + '<div>上次成功时间</div><div>'+esc(lastAt||'无（从未成功加载）')+'</div>'
     + '<div>看板数据</div><div>board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
     + '<div>口径根</div><div>investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）</div>'
@@ -438,13 +438,13 @@ function renderAudit(d){
   $('#s-audit').innerHTML = h;
 }
 // ── 加载 ──
-// 三源降级（先到先得，每个带 ?_=Date.now() 破缓存）：
-//   1) ./data/board.json  同域 Pages 自托管，40 秒内刷新（绕开 CDN 滞后）
-//   2) raw.githubusercontent.com 公开仓库兜底
+// 两源降级（2026-11-04 P0-3 顺序反转：raw 优先，自托管兜底）
+//   1) raw.githubusercontent.com —— S4 每 30 分钟覆盖（最多 minutes CDN 时差）
+//   2) ./data/board.json 自托管兜底 —— 2026-11-04 起 S4 不往 finhub(Pages) 仓推 board.json，会变旧
 //   3) localStorage 上次成功数据（离线可读）
 // 全部失败 → 显示错误 + 「上次成功时间」，绝不显示成 0 或空成功。
-const BOARD_SOURCE_SELF  = './data/board.json';
 const BOARD_SOURCE_RAW   = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
+const BOARD_SOURCE_SELF  = './data/board.json';
 const BOARD_CACHE_KEY    = 'board.cache.v1';
 const BOARD_CACHE_META   = 'board.cache.meta.v1';
 
@@ -485,7 +485,7 @@ async function fetchOne(url){
 // 返回 { d, src, fromCache, lastSuccessAt, errors }
 async function fetchBoard(){
   const errors = [];
-  const candidates = [BOARD_SOURCE_SELF, BOARD_SOURCE_RAW];
+  const candidates = [BOARD_SOURCE_RAW, BOARD_SOURCE_SELF];
   for (const u of candidates){
     try{
       const d = await fetchOne(u);

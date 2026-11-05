@@ -669,22 +669,22 @@ function render(s){
       <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'}</span></h2>
       <div class="sum">
         <div class="s"><div class="n">总资产（市值+现金）</div>
-          <div class="p">${num(hd.assets,0)}</div></div>
+          <div class="p">${money(hd.assets)}</div></div>
         <div class="s"><div class="n">浮动盈亏</div>
-          <div class="p ${pnlCls}">${hd.totalPnl==null?'—':(hd.totalPnl>0?'+':'')+num(hd.totalPnl,0)}
+          <div class="p ${pnlCls}">${hd.totalPnl==null?'—':(hd.totalPnl>0?'+':'')+money(hd.totalPnl)}
           <small class="${pnlCls}">${hd.totalPnlPct==null?'':(hd.totalPnlPct>0?'+':'')+num(hd.totalPnlPct,2)+'%'}</small></div></div>
       </div>
       <table>`;
     (hd.platforms||[]).forEach(p=>{
       h+=`<tr><td>${p.platform}<span class="pill">${p.date||''}</span></td>
-          <td class="r">${num(p.mv,0)}</td>
-          <td class="r ${cls(p.pnl)}">${p.pnl==null?'—':(p.pnl>0?'+':'')+num(p.pnl,0)}</td></tr>`;
+          <td class="r">${money(p.mv)}</td>
+          <td class="r ${cls(p.pnl)}">${p.pnl==null?'—':(p.pnl>0?'+':'')+money(p.pnl)}</td></tr>`;
     });
-    h+=`<tr><td style="color:var(--dim)">现金合计</td><td class="r">${num(hd.totalCash,0)}</td><td class="r fl">—</td></tr>`;
+    h+=`<tr><td style="color:var(--dim)">现金合计</td><td class="r">${money(hd.totalCash)}</td><td class="r fl">—</td></tr>`;
     h+=`</table>`;
     h+=`<h2 style="margin-top:14px">Top 持仓 <span class="tag">共 ${hd.nPositions||(hd.positions||[]).length||0} 只</span></h2><table>`;
     (hd.positions||[]).slice(0,8).forEach(p=>{
-      h+=`<tr><td>${p.name}</td><td class="r">${num(p.mv,0)}</td>
+      h+=`<tr><td>${p.name}</td><td class="r">${money(p.mv)}</td>
           <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':signedPct(p.pnlPct)}</td></tr>`;
     });
     h+=`</table><div class="note">市值/成本来自 finwatch 最新快照（非实时净值）。盈亏仅统计有成本记录的持仓${hd.costCoveragePct!=null?`（覆盖市值 ${hd.costCoveragePct}%）`:''}。</div></div>`;
@@ -778,6 +778,7 @@ function render(s){
      关键信息不缺：header 行情条 + _freshness 绿横幅 + 大盘裁决本身都在。 */
   classifyTier2();
   pick('#gen').textContent='更新 '+s.generatedAt+(lastSource?' · '+lastSource:'');
+    try{ window.__stateGeneratedAt = s.generatedAt; }catch(e){}
   document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
 function classifyTier2(){
@@ -1140,6 +1141,23 @@ function updateFreshnessBanner(d){
   else { el.className='freshbar ok'; }
   let txt = f.worst==='critical' ? '⚠ ' : (f.worst==='stale' ? '△ ' : '✓ ');
   txt += f.banner;
+  // 2026-11-05（F3 真实性）：**板级自检** —— 治理板自己的时点超龄时，
+  // 板内 _freshness 再「全部有效」也不能显示绿条（自证新鲜的假新鲜）。
+  // 实测事故：板时点冻结 9.5 小时，绿条仍写「全部数据在有效期内」。
+  var boardAgeMin = (function(){
+    try{
+      var s = d && d.generatedAt; if(!s) return null;
+      var n = String(s).replace('T',' ').replace(/[+-]\d{2}:\d{2}$/,'');
+      var p = new Date(n.replace(' ','T')); if(!p || isNaN(p.getTime())) return null;
+      return (Date.now()-p.getTime())/60000;
+    }catch(e){ return null; }
+  })();
+  if(boardAgeMin!=null && boardAgeMin > 90){
+    el.className = 'freshbar warn';
+    var hh = Math.floor(boardAgeMin/60), mm = Math.floor(boardAgeMin%60);
+    var ageTxt = hh>=24 ? (Math.floor(hh/24)+' 天') : (hh+' 小时'+mm+' 分');
+    txt = '△ 治理数据已 '+ageTxt+'未更新（板时点 '+String(d.generatedAt).slice(0,16)+'）—— 以下内容可能过期：'+f.banner;
+  }
   const h = (f.items||[]).find(x=>x.id==='holdings');
   if(h && h.asOf) txt += '　（持仓 ' + h.asOf + (h.ageDays!=null?' / '+h.ageDays+'天':'') + '）';
   el.textContent = txt;
@@ -1828,25 +1846,39 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
   function tickAgeLabel(){
     var genEl = document.getElementById('gen');
     if (!genEl) { return; }
-    var d = window.__extrasData || (window.__boardData || null);
-    var stamp = d && (d.generatedAt || (d._freshness && d._freshness.checkedAt) || null);
-    if (!stamp) { return; }
-    var parsed = null;
-    try{
-      var normalized = String(stamp).replace('T', ' ').replace(/[+-]\d{2}:\d{2}$/, '');
-      parsed = new Date(normalized.replace(' ', 'T'));
-    }catch(parseErr){ return; }
-    if (!parsed || isNaN(parsed.getTime())) { return; }
-    var minutes = (Date.now() - parsed.getTime()) / 60000;
-    if (minutes < 0) { return; }
+    // 2026-11-05（F3 真实性）：实时层(state.json)与治理层(board.json)是两个数据源、
+    // 两个时点。旧版拿治理板的时点冒充整页「数据年龄」→ 顶部显示「更新 10:03（实时）」
+    // 同时显示「数据 10 小时前」（治理板冻结时点）—— 同屏自相矛盾。
+    // 现在：两层各算各的、各自如实显示，整体颜色取**最旧的一层**。
+    var parseTs = function(stamp){
+      if(!stamp) return null;
+      try{
+        var n = String(stamp).replace('T',' ').replace(/[+-]\d{2}:\d{2}$/,'');
+        var p = new Date(n.replace(' ','T'));
+        return (p && !isNaN(p.getTime())) ? p.getTime() : null;
+      }catch(e){ return null; }
+    };
+    var board = window.__extrasData || (window.__boardData || null);
+    var stateMs = parseTs(window.__stateGeneratedAt || null);
+    var boardMs  = parseTs(board && (board.generatedAt || (board._freshness && board._freshness.checkedAt) || null));
+    if (stateMs==null && boardMs==null) { return; }
+    var stateMin = stateMs==null ? null : (Date.now()-stateMs)/60000;
+    var boardMin = boardMs==null ? null : (Date.now()-boardMs)/60000;
+    if (stateMin!=null && stateMin<0) stateMin=null;
+    if (boardMin!=null && boardMin<0) boardMin=null;
+    var worst = Math.max(stateMin==null?-1:stateMin, boardMin==null?-1:boardMin);
+    if (worst < 0) { return; }
+    var color = worst > 60 ? '#ff5c5c' : (worst > 15 ? '#ffb340' : '#7d8b9c');
     // 去掉上一轮追加的后缀，避免叠加
-    var base = genEl.textContent.replace(/\s*·\s*数据\s.*$/, '');
-    var color = minutes > 60 ? '#ff5c5c' : (minutes > 15 ? '#ffb340' : '#7d8b9c');
+    var base = genEl.textContent.replace(/\s*·\s*(?:数据|实时|治理)\s.*$/, '');
     genEl.innerHTML = '';
     genEl.appendChild(document.createTextNode(base));
+    var parts = [];
+    if(stateMin!=null) parts.push('实时 '+humanAge(stateMin));
+    if(boardMin!=null) parts.push('治理 '+humanAge(boardMin));
     var span = document.createElement('span');
     span.style.color = color;
-    span.textContent = ' · 数据 ' + humanAge(minutes);
+    span.textContent = ' · ' + parts.join(' · ');
     genEl.appendChild(span);
   }
 

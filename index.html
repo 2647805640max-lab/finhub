@@ -241,6 +241,11 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
 #marketbar .mk b{font-weight:600}
 #marketbar .up{color:#ff5c5c}
 #marketbar .dn{color:#2ecc71}
+/* 2026-11-05：本地提醒按钮 */
+.lnbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim);
+  border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer;margin-left:8px}
+.lnbtn:hover{border-color:var(--acc);color:var(--txt)}
+.lnbtn.on{border-color:var(--dn);color:var(--dn)}
 /* 2026-11-05 P1-8：执行单 */
 .trim{margin:10px 0 4px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)}
 .trim .trimhead{font-size:12.5px;margin-bottom:4px}
@@ -270,6 +275,7 @@ details.unk .unklist b{color:var(--txt)}
     <button data-page="live" class="on">实时</button>
     <button data-page="gov">治理</button>
     <button data-page="hold">持仓上传</button>
+    <button id="localnotif" class="lnbtn" title="页面打开时，信号变化就弹系统通知（不需要配任何凭据）">🔔 本地提醒</button>
     <span id="t2bar"><a href="board.html" class="golink">详情看板 →</a>
       <label class="t2toggle"><input id="t2show" type="checkbox">显示更多</label></span>
   </nav>
@@ -1018,6 +1024,80 @@ function bindTrimPlan(root){
       });
     });
   }catch(e){}
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   2026-11-05 PWA 本地轮询通知（零凭据兜底触达）
+   流量设计：轮询 commits API（~2KB）而不是 board.json 全文（178KB）；
+             sha 变了才拉全文取内容。3 分钟一次 ≈ 20 次/小时，未认证 API 限流安全。
+   诚实边界：浏览器会回收后台页面 → 页面被杀后不再检查 → 只在"页面开着"时有效，
+             不能替代 PushPlus/WxPusher/邮件这类真正的推送通道。
+   ══════════════════════════════════════════════════════════════════ */
+const LN_COMMITS_API = 'https://api.github.com/repos/2647805640max-lab/finhub-data/commits?path=board.json&per_page=1';
+const LN_BOARD_RAW  = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
+const LN_STORE       = 'finhub.localNotif.v1';
+
+function lnState(){ try{ return JSON.parse(localStorage.getItem(LN_STORE)||'{}')||{}; }catch(e){ return {}; } }
+function lnSave(s){ try{ localStorage.setItem(LN_STORE, JSON.stringify(s)); }catch(e){} }
+
+function lnUpdateBtn(){
+  var b=document.getElementById('localnotif');
+  if(!b) return;
+  var perm=(typeof Notification!=='undefined')?Notification.permission:'unsupported';
+  var st=lnState();
+  b.textContent = (perm==='granted') ? '🔔 本地提醒·开' : (perm==='denied' ? '🔕 本地提醒·被拒' : '🔔 本地提醒');
+  b.classList.toggle('on', perm==='granted');
+  b.title = (perm==='granted')
+    ? ('页面打开时，信号变化会弹系统通知（上次检查：'+(st.lastCheck||'—')+'）')
+    : (perm==='denied' ? '浏览器已拒绝通知权限，请在站点设置里手动开启' : '点一下开启：页面打开时信号变化弹通知（不需要配任何凭据）');
+}
+
+function lnEnable(){
+  if(typeof Notification==='undefined'){ alert('这个浏览器不支持系统通知'); return; }
+  Notification.requestPermission().then(function(p){
+    lnUpdateBtn();
+    if(p==='granted'){ var s=lnState(); s.enabled=1; s.lastSha=''; lnSave(s); lnCheck(); }
+  });
+}
+
+/* 拉一次：先看 board.json 的最新 commit sha；变了才拉全文取内容 */
+function lnCheck(){
+  var s=lnState();
+  if(!s.enabled) return;
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  s.lastCheck=new Date().toLocaleTimeString('zh-CN',{hour12:false}); lnSave(s);
+  fetch(LN_COMMITS_API,{cache:'no-store'})
+   .then(function(r){ return r.ok?r.json():null; })
+   .then(function(j){
+     if(!j||!Array.isArray(j)||!j.length) return;
+     var sha=j[0].sha;
+     if(sha && sha===s.lastSha) return;      // 没变 → 什么都不做
+     s.lastSha=sha; lnSave(s);
+     return fetch(LN_BOARD_RAW+'?cb='+Date.now(),{cache:'no-store'})
+       .then(function(r){ return r.ok?r.json():null; })
+       .then(function(b){
+         if(!b) return;
+         var bt=b.today||{}, pos=bt.position||{}, rb=bt.rebalance||{};
+         var act={'ADD':'加仓','TRIM':'减仓','EXIT':'撤离','WAIT':'观望'}[rb.action||'']||rb.action||'信号更新';
+         var lines=[];
+         if(pos.currentPct!=null&&pos.hardMaxPct!=null){
+           var gap=Math.round((pos.currentPct-pos.hardMaxPct)*100)/100;
+           lines.push(gap>0.05 ? ('敞口 '+pos.currentPct+'% → 硬顶 '+pos.hardMaxPct+'%（需降 '+gap+' 个百分点）')
+                               : ('敞口 '+pos.currentPct+'%（硬顶 '+pos.hardMaxPct+'% 内）'));
+         }
+         var devs=((b.chain||{}).knownDeviations||[]).filter(function(d){
+           var sv=String(d.severity||'').toLowerCase();
+           return (sv==='high'||sv==='medium')&&String(d.status||'').indexOf('未执行')>=0; });
+         if(devs.length) lines.push('已知未执行偏差 '+devs.length+' 条');
+         var unres=((b.ips||{}).items||[]).filter(function(x){ return x.status==='warn'||x.status==='gap'; });
+         if(unres.length) lines.push('口径未决 '+unres.length+' 项');
+         try{
+           new Notification('【FinHub】'+act, {body: lines.join('\n'), tag:'finhub-signal', icon:'icon-192.png'});
+         }catch(e){}
+       });
+   })
+   .catch(function(){});
 }
 
 function boardData(){ return window.__extrasData || window.__boardData || null; }
@@ -2243,6 +2323,17 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     span.textContent = ' · ' + parts.join(' · ');
     genEl.appendChild(span);
   }
+
+    /* 2026-11-05：本地轮询通知接线（零凭据兜底触达） */
+  try{
+    var lnBtn=document.getElementById('localnotif');
+    if(lnBtn){ lnBtn.addEventListener('click', lnEnable); }
+    lnUpdateBtn();
+    setInterval(function(){ try{ lnCheck(); }catch(e){} }, 180000);  // 3 分钟一次
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden){ try{ lnCheck(); }catch(e){} }
+    });
+  }catch(e){}
 
   setInterval(tickAgeLabel, 30000);
   setTimeout(tickAgeLabel, 2500);

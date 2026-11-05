@@ -409,8 +409,9 @@ async function load(){
   if(base.tunnelUrl){
     try{
       const live=await jget(lastRoot+'/data/state.json?'+bust);
+      window.__tunnelOK=true;                      // 2026-11-05 F7：隧道可达性如实记录
       if(!base.ts || (live.ts||0)>=(base.ts||0)){ data=Object.assign({},base,live); src='实时'; }
-    }catch(e){}
+    }catch(e){ window.__tunnelOK=false; }
     if(base.holdings&&base.holdings.assets){
       /* 本机页面（localhost）的 data/state.json 自带个人层，不需要口令 */
       personalOK=true;
@@ -697,9 +698,18 @@ function render(s){
     h+=`<div class="card"><h2>我的持仓 <span class="tag">读取失败</span></h2>
         <div class="err">${hd.error}</div></div>`;
   }else if(!hd.assets && s.__personalOK===false){
-    h+=`<div class="card"><h2>我的持仓 <span class="tag">未连接</span></h2>
-        <div class="note">持仓/告警/新闻属于个人层，只通过 VPS 隧道传输，不放在公开仓库。
-        当前隧道未连通，所以看不到 —— 这是有意设计，不是数据丢了。电脑端与 VPS 恢复后自动出现。</div></div>`;
+    /* 2026-11-05 F7：如实区分「隧道不通」「缺口令」「口令错」—— 不再一律说"未连接"。
+       实测：隧道 /data/state.json 返回 200、/data/personal.json 返回 401，
+       说明隧道是好的，缺的是口令；说成"隧道未连通"属于错误归因。 */
+    const tun=window.__tunnelOK;
+    const hTag = tun===false ? '隧道未连接' : (lockState==='bad' ? '口令不对' : '待解锁');
+    const hMsg = tun===false
+      ? '持仓/告警/新闻属于个人层，只通过 VPS 隧道传输，不放在公开仓库。当前隧道确实读不到，稍后会自动重试。'
+      : (lockState==='bad'
+        ? '隧道已连接，但口令未通过（可能是输错，或尝试过多被限流）。重新输入口令即可看到个人层。'
+        : '隧道已连接，个人层需要口令才能读取。请在上方「个人层」输入口令；公开仓库里不含持仓/告警/新闻，这是有意设计。');
+    h+=`<div class="card"><h2>我的持仓 <span class="tag">${hTag}</span></h2>
+        <div class="note">${hMsg}</div></div>`;
   }else{
     const pnlCls=cls(hd.totalPnl);
     h+=`<div class="card">

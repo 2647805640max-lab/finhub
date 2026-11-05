@@ -78,5 +78,21 @@
         }
       ]
     }
+  ],
+  "screenshots": [
+    {
+      "src": "shot-narrow.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "手机首屏：今日行动 + 已知偏差"
+    },
+    {
+      "src": "shot-wide.png",
+      "sizes": "960x540",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "宽屏：大盘裁决与持仓概览"
+    }
   ]
 }

@@ -2228,7 +2228,7 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     if (worst < 0) { return; }
     var color = worst > 60 ? '#ff5c5c' : (worst > 15 ? '#ffb340' : '#7d8b9c');
     // 去掉上一轮追加的后缀，避免叠加
-    var base = genEl.textContent.replace(/\s*·\s*(?:数据|实时|治理)\s.*$/, '');
+    var base = genEl.textContent.replace(/\s*·\s*(?:数据|实时|治理|收盘|快照)\s.*$/, '');
     genEl.innerHTML = '';
     genEl.appendChild(document.createTextNode(base));
     var parts = [];

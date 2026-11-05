@@ -251,7 +251,6 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
   </header>
   <div id="freshbar" class="freshbar" hidden></div>
   <div id="marketbar" class="freshbar marketbar" hidden></div>
-  <div id="autobar" class="freshbar" hidden></div>
   <nav id="modebar">
     <button data-page="live" class="on">实时</button>
     <button data-page="gov">治理</button>
@@ -260,6 +259,11 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
       <label class="t2toggle"><input id="t2show" type="checkbox">显示更多</label></span>
   </nav>
   <div id="page-live">
+    <!-- 2026-11-05 P0：首屏决策条（行动指引 / 已知未执行偏差 / urgent 通知）。
+         放在 #app 之前：这两类信息不随 tier2 折叠，用户一定看得到。 -->
+    <div id="actionbar" class="freshbar" hidden></div>
+    <div id="devbar" class="freshbar" hidden></div>
+    <div id="notifbar" class="freshbar" hidden></div>
     <div id="app"><div class="card"><span class="err">加载中…</span></div></div>
   </div>
   <div id="page-hold" hidden>
@@ -283,6 +287,9 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
     </div>
   </div>
   <div id="page-gov" hidden>
+    <!-- 2026-11-05 P0-2：自动化健康（管道跑了多少次 OK/WARN）属于运维信息，
+         移到治理页；首屏让位给"已知未执行偏差"这类真风险。 -->
+    <div id="autobar" class="freshbar" hidden></div>
     <div id="govfreshbar" class="freshbar" hidden></div>
     <header>
       <h1>治理看板 <small id="govVer">—</small></h1>
@@ -450,7 +457,19 @@ async function load(){
   loadExtras();
 }
 
+/* 2026-11-05：主壳自带的 HTML 转义。
+   为什么不直接用 esc：esc 声明在**第二个 <script> 块**（治理页）里，而主壳在
+   第一个块末尾就执行了首次 load() → 那时第二块还没跑 → esc 处于暂时性死区 →
+   ReferenceError: esc is not defined → render 中断 → 整页只剩「加载中…」。
+   教训：跨 <script> 块的顶层 const 有执行顺序依赖，不能当全局函数用。
+   （同类坑已发生过两次：money、esc。parity C30 现在会自动扫这类隐患。） */
+const escHtml = x => String(x==null?'':x).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 function render(s){
+  /* 2026-11-05 P0：存下 state 供决策条使用（renderExtras 只拿到 board，
+     触发证据在 state.engine.evidence 里），并重算首屏决策条。 */
+  try{ window.__stateData=s; }catch(e){}
   /* 2026-11-05 修 TDZ/作用域 bug：money 原先声明在 `if(dsv.signal){...}` 块内，
      而「我的持仓」分支（块外，行 ~719+）调用 money() → ReferenceError: money is not defined
      → render 中断 → 页面只剩「加载中…」。
@@ -503,6 +522,9 @@ function render(s){
         ${bar('硬顶 '+hardTop,pos.hardMaxPct,100,'#7d8b9c')}
       </div>
       <div class="note">来源 ${pos.source||'board.json'} · 快照 asOf ${pos.dataAsOf||'—'}${pos.dataAgeDays!=null?'（'+pos.dataAgeDays+' 天）':''} · 金额与引擎清单属个人层，解锁后可见</div>
+      ${(pos.currentPct!=null&&pos.hardMaxPct!=null)?((pos.currentPct-pos.hardMaxPct)>0.05
+        ? `<div class="concl">· 需降 <b>${(Math.round((pos.currentPct-pos.hardMaxPct)*100)/100)}</b> 个百分点才能到硬顶 ${pos.hardMaxPct}%（按 ${pos.currentPct}% 计）</div>`
+        : `<div class="concl">· 已低于硬顶 ${pos.hardMaxPct}%</div>`):''}
     </div>`;
   }
   if(dsv.signal){
@@ -538,6 +560,7 @@ function render(s){
         <div class="adv">${e.advice||''}</div>
       </div>
     </div>
+    ${(e.evidence&&e.evidence.length)?(`<div class="concl">· 触发证据（${e.evidence.length} 条）：${e.evidence.slice(0,2).map(x=>escHtml(String(x).replace(/^\[[^\]]+\]\s*/,''))).join('；')}</div>`):''}
     <div class="bars">
       ${bar('机会分',sc.opportunity,100,'var(--dn)')}
       ${bar('风险分',sc.risk,100,'var(--up)')}
@@ -833,6 +856,91 @@ function render(s){
     try{ window.__stateGeneratedAt = s.generatedAt; }catch(e){}
   document.getElementById('now').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   2026-11-05 P0 批次：首屏决策条（行动指引 / 已知未执行偏差 / urgent 通知）
+   数据全部来自**公开层**（board.json / state.json），不含金额、不含持仓名。
+   为什么单独成条而不塞进卡片：
+     · 首屏卡片受 tier2 折叠控制（"显示更多"才展开），而这三条恰恰是
+       "今天该不该动手"的核心，折叠起来等于没有；
+     · 卡片是 h+= 拼字符串，条是独立元素 → 可被 headless 直接断言存在性。
+   ══════════════════════════════════════════════════════════════════ */
+function boardData(){ return window.__extrasData || window.__boardData || null; }
+function stateData(){ return window.__stateData || null; }
+
+/* P0-1 行动指引：把"要减仓"变成"要降几个百分点"（公开层不泄漏金额） */
+function renderActionBar(){
+  var el=document.getElementById('actionbar');
+  if(!el) return;
+  var b=boardData(), s=stateData();
+  var bt=(b&&b.today)||null;
+  var pos=(bt&&bt.position)||{}, rb=(bt&&bt.rebalance)||{};
+  var ev=((s&&s.engine)||{}).evidence||[];
+  var cur=pos.currentPct, hard=pos.hardMaxPct;
+  if(cur==null||hard==null){ el.hidden=true; return; }
+  var gap=Math.round((cur-hard)*100)/100;
+  var act=rb.action||'';
+  var actCN={ADD:'加仓',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[act]||act;
+  var inBand=rb.inBand===true;
+  var txt;
+  if(gap>0.05){
+    txt='今日行动：'+actCN+' · 当前敞口 '+cur+'% → 硬顶 '+hard+'% → **需降 '+gap+' 个百分点**';
+    el.className='freshbar warn';
+  }else{
+    txt='今日行动：'+actCN+' · 当前敞口 '+cur+'% 在硬顶 '+hard+'% 内'+(inBand?'（目标区间内）':'');
+    el.className='freshbar ok';
+  }
+  // P0-5 触发证据：把孤立分数接上因果（取前 2 条证据）
+  if(ev.length){
+    var two=ev.slice(0,2).map(function(x){ return String(x).replace(/^\[[^\]]+\]\s*/,''); });
+    txt+='　· 触发：'+two.join('　/　');
+  }
+  el.innerHTML='';
+  el.appendChild(document.createTextNode(txt));
+  el.hidden=false;
+}
+
+/* P0-2 已知未执行偏差：系统自己知道、但还没执行的高危项 —— 首屏该回答"我该不该动手" */
+function renderDevBar(){
+  var el=document.getElementById('devbar');
+  if(!el) return;
+  var b=boardData();
+  var devs=((b&&b.chain)||{}).knownDeviations||[];
+  var hit=devs.filter(function(d){
+    var sev=String(d.severity||'').toLowerCase();
+    var st=String(d.status||'');
+    return (sev==='high'||sev==='medium') && st.indexOf('未执行')>=0;
+  });
+  if(!hit.length){ el.hidden=true; return; }
+  var parts=hit.map(function(d){ return (d.severity==='high'?'[高]':'[中]')+(d.title||d.id||''); });
+  el.className='freshbar bad';
+  el.innerHTML='';
+  el.appendChild(document.createTextNode('⚠ 已知未执行偏差 '+hit.length+' 条（系统已登记、你还没执行）：'+parts.join('；')+'　→ 治理页「规则」可展开'));
+  el.hidden=false;
+}
+
+/* P0-4 urgent 脱敏通知（board.notifications.policy：不含金额、不含持仓名称） */
+function renderNotifBar(){
+  var el=document.getElementById('notifbar');
+  if(!el) return;
+  var b=boardData();
+  var items=((b&&b.notifications)||{}).items||[];
+  var urgent=items.filter(function(n){ return String(n.level||'').toLowerCase()==='urgent'; });
+  if(!urgent.length){ el.hidden=true; return; }
+  el.className='freshbar bad';
+  el.innerHTML='';
+  el.appendChild(document.createTextNode('⛔ '+urgent.map(function(n){
+    return (n.title||'')+(n.body?('：'+n.body):'');
+  }).join('　｜　')));
+  el.hidden=false;
+}
+
+function renderDecisionBars(){
+  try{ renderActionBar(); }catch(e){}
+  try{ renderDevBar(); }catch(e){}
+  try{ renderNotifBar(); }catch(e){}
+}
+
 function classifyTier2(){
   /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」；其余卡 (含 xcard) tier2 折叠 */
   try{
@@ -936,6 +1044,7 @@ async function loadExtras(){
   }
   window.__extrasData=b;
   renderExtras(b);
+  try{ renderDecisionBars(); }catch(e){}   // 2026-11-05 P0：board 到达后重算首屏决策条
   if(window.GOV) window.GOV.render(b);
 }
 function renderExtras(b){
@@ -1912,6 +2021,13 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     };
     var board = window.__extrasData || (window.__boardData || null);
     var stateMs = parseTs(window.__stateGeneratedAt || null);
+    /* 2026-11-05 P0-3 收盘语义：收盘后仍写"实时 X 前"是误导。
+       state.freshness.inSession=false 即已收盘 → 改写"收盘 · 下一交易日 09:15"。 */
+    var inSession=true;
+    try{
+      var fz=(window.__stateData&&window.__stateData.freshness)||null;
+      if(fz && fz.inSession===false) inSession=false;
+    }catch(e){}
     var boardMs  = parseTs(board && (board.generatedAt || (board._freshness && board._freshness.checkedAt) || null));
     if (stateMs==null && boardMs==null) { return; }
     var stateMin = stateMs==null ? null : (Date.now()-stateMs)/60000;
@@ -1926,7 +2042,11 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     genEl.innerHTML = '';
     genEl.appendChild(document.createTextNode(base));
     var parts = [];
-    if(stateMin!=null) parts.push('实时 '+humanAge(stateMin));
+    if(inSession){
+      if(stateMin!=null) parts.push('实时 '+humanAge(stateMin));
+    }else{
+      parts.push('收盘 · 下一交易日 09:15');
+    }
     if(boardMin!=null) parts.push('治理 '+humanAge(boardMin));
     var span = document.createElement('span');
     span.style.color = color;

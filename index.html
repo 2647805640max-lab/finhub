@@ -434,6 +434,17 @@ async function load(){
     window.__fhKeyGet=getKey;
   }catch(e){}
 
+  /* 2026-11-05（F6 公开回落）：个人层不可达时，今日信号卡的仓位/区间信息
+     从治理层 board.json 的 today 段取（不含金额、可公开）。
+     没有这一段 → 隧道一断，整张「今日信号卡」消失，用户会误以为"今天没信号"。 */
+  try{
+    const bsrc=(EXTRAS_SOURCES[0]||'');
+    if(bsrc){
+      const bd=await jget(bsrc+(bsrc.indexOf('?')>=0?'&':'?')+'_='+Date.now());
+      if(bd && bd.today) data.__boardToday=bd.today;
+    }
+  }catch(e){}
+
   render(data);
   loadExtras();
 }
@@ -461,6 +472,32 @@ function render(s){
 
   /* 日频信号卡：一天一版，因子按收盘算，盘中不重算 */
   const dsv=s.daily_signal||{};
+  if(!dsv.signal && s.__boardToday && s.__boardToday.position){
+    /* ── F6 公开回落版（个人层不可达时）──
+       只显示**不含金额**的关键决策信息：动作 / 敞口% / 硬顶 / 目标区间 / 数据时点。
+       金额与引擎清单属个人层，锁定时不显示、不估算、不用旧值冒充。 */
+    const bt=s.__boardToday, pos=bt.position||{}, rb=bt.rebalance||{};
+    const pact=rb.action||'';
+    const pcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[pact]||'wait';
+    const pcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[pact]||pact||'—';
+    const band=(rb.bandLowPct!=null&&rb.bandHighPct!=null)?(rb.bandLowPct+'–'+rb.bandHighPct+'%'):'—';
+    const hardTop=pos.hardMaxPct!=null?pos.hardMaxPct+'%':'—';
+    h+=`<div class="card">
+      <h2>今日信号卡 <span class="tag">日频 ${bt.date||'—'} · 公开层（个人层未解锁）</span></h2>
+      <div class="hero">
+        <div class="badge ${pcls}">${pcn}</div>
+        <div class="meta">
+          <div class="stage">仓位敞口 <span class="pill">${pos.currentPct!=null?pos.currentPct+'%':'—'} · 硬顶 ${hardTop} · 区间 ${band}</span></div>
+          <div class="adv">${rb.inBand===true?'在目标区间内':(rb.action?'超出目标区间，需按动作调整':'—')}${pos.stale?' · <span style="color:var(--warn)">快照偏旧</span>':''}</div>
+        </div>
+      </div>
+      <div class="bars">
+        ${bar('仓位敞口',pos.currentPct,100,'var(--up)')}
+        ${bar('硬顶 '+hardTop,pos.hardMaxPct,100,'#7d8b9c')}
+      </div>
+      <div class="note">来源 ${pos.source||'board.json'} · 快照 asOf ${pos.dataAsOf||'—'}${pos.dataAgeDays!=null?'（'+pos.dataAgeDays+' 天）':''} · 金额与引擎清单属个人层，解锁后可见</div>
+    </div>`;
+  }
   if(dsv.signal){
     const dailySig=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
     const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[dailySig.action]||'wait';

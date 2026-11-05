@@ -512,6 +512,26 @@ function render(s){
   const actCN={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[act]||act;
   let h='';
 
+  /* 双方案卡（2026-11-05）：纪律层 / 外部信号层分开显示。
+     数据来自 state.discipline / externalSignal / combined —— 由 finwatch 的 rules.js
+     单一实现导出（tools/export-discipline.mjs），FinHub 不重算任何分类或阈值。
+     旧口径把黄金算进风险仓，会与这里的「严格风险」并存冲突，故本卡优先且置顶。 */
+  const disc=s.discipline, ext=s.externalSignal;
+  if(disc && disc.strictRiskPct!=null){
+    const ok=disc.status==='COMPLIANT';
+    const goldCls=disc.goldPct>=disc.goldMaxPct?'trim':(disc.goldPct>=disc.goldAlertPct?'wait':'fl');
+    const combCN={REBALANCE_DOWN:'需要降风险',HOLD_NO_NEW_RISK:'持有·不加新风险',ALLOW_ADD:'可加仓',HOLD:'持有'}[s.combined]||(s.combined||'—');
+    h+=`<div class="card" data-tier="1">
+      <h2>纪律 · 外部信号 <span class="tag">finwatch 单一口径</span></h2>
+      <div class="row"><span>严格风险仓位</span><span class="${ok?'fl':'trim'}">${num(disc.strictRiskPct)}% / 上限 ${num(disc.strictRiskCapPct)}% · ${ok?'合规':'超限'}</span></div>
+      <div class="row"><span>黄金（防御资产）</span><span class="${goldCls}">${num(disc.goldPct)}% <span class="note">提醒 ${num(disc.goldAlertPct)}% / 硬顶 ${num(disc.goldMaxPct)}%</span></span></div>
+      <div class="row"><span>论点门控</span><span class="${disc.thesisGate==='invalid'?'trim':'fl'}">${disc.thesisGate==='invalid'?'已恶化 · 不加风险':'正常'}</span></div>
+      <div class="row"><span>外部信号</span><span class="${ext&&ext.addRiskAllowed?'fl':'wait'}">${(ext&&ext.marketAction)||'—'}${ext&&ext.addRiskAllowed?' · 允许加仓':' · 禁止加仓'}</span></div>
+      <div class="row"><span>合成结论</span><span><b>${combCN}</b></span></div>
+      <div class="note">时点 ${s.disciplineAsOf||'—'} · 合成码 ${s.combined||'—'} · 外部层 ${(ext&&ext.marketRegime)||'—'}</div>
+    </div>`;
+  }
+
   /* 个人层口令锁 */
   if(lockState){
     const msg=lockState==='bad'?'口令不对（或尝试过多）。重新输入：'
@@ -1192,7 +1212,7 @@ function renderDecisionBars(){
 /* 2026-11-05：一级屏保留清单（集中成常量，便于核对）。
    为什么集中：以前是内联正则，新增卡片忘了加进来就会「上线即隐身」
    （折叠规则藏在正则里，谁加卡片谁得记得改它，且没有任何提示）。 */
-const TIER1_TITLES = ['大盘裁决','个人层','今日信号卡','我的持仓','告警'];
+const TIER1_TITLES = ['纪律','大盘裁决','个人层','今日信号卡','我的持仓','告警'];
 
 function classifyTier2(){
   /* 一级屏收纳：默认只保留「大盘裁决」「个人层」「今日信号卡」「我的持仓」「告警」；

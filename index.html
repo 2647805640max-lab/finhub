@@ -451,6 +451,12 @@ async function load(){
 }
 
 function render(s){
+  /* 2026-11-05 修 TDZ/作用域 bug：money 原先声明在 `if(dsv.signal){...}` 块内，
+     而「我的持仓」分支（块外，行 ~719+）调用 money() → ReferenceError: money is not defined
+     → render 中断 → 页面只剩「加载中…」。
+     触发条件：**个人层可见**（本机 localhost 免口令 / 手机解锁后）；
+     个人层锁定时走「待解锁」分支不执行 → 线上一直没暴露。 */
+  const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
   const e=s.engine||{}, sc=e.scores||{}, m=s.market||{}, b=s.bonds||{}, c=s.commodity||{};
   const act=(e.marketAction||'WAIT');
   const actCls=act==='TRIM'||act==='EXIT'?'trim':(act==='ADD'?'add':'wait');
@@ -503,7 +509,6 @@ function render(s){
     const dailySig=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
     const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[dailySig.action]||'wait';
     const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[dailySig.action]||dailySig.action;
-    const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
     h+=`<div class="card">
       <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · ${(dsv.builtAt||'').slice(11,16)}</span></h2>
       <div class="hero">

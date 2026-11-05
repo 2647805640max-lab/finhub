@@ -46,7 +46,7 @@
       "name": "持仓上传",
       "short_name": "上传",
       "description": "粘贴持仓快照到 VPS",
-      "url": "/finhub/?page=hold",
+      "url": "/?page=hold",
       "icons": [
         {
           "src": "icon-192.png",
@@ -58,7 +58,7 @@
       "name": "治理看板",
       "short_name": "治理",
       "description": "IPS / 因子 / 新闻 / 推演 / 审计",
-      "url": "/finhub/?page=gov",
+      "url": "/?page=gov",
       "icons": [
         {
           "src": "icon-192.png",
@@ -70,7 +70,7 @@
       "name": "实时",
       "short_name": "实时",
       "description": "行情 / 三因子 / 大盘裁决",
-      "url": "/finhub/?page=live",
+      "url": "/?page=live",
       "icons": [
         {
           "src": "icon-192.png",

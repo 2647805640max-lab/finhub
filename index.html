@@ -491,6 +491,10 @@ function render(s){
   try{ window.__stateData=s; }catch(e){}
   /* 2026-11-05 P1-8：保存本次渲染结果，供执行单勾选后就地重绘（不整页刷新） */
   try{ window.__lastRender=null; }catch(e){}
+  /* 2026-11-05 P1-8 修「假成功」：勾选后要能真的更新累计，
+     所以把 holdings 留一份给重绘用（之前用 window.__lastRender，
+     却被置成 null → 勾选后界面不更新 = 看起来能用、实际没生效）。 */
+  try{ if (s && s.holdings) window.__holdings = s.holdings; }catch(e){}
   /* 2026-11-05 修 TDZ/作用域 bug：money 原先声明在 `if(dsv.signal){...}` 块内，
      而「我的持仓」分支（块外，行 ~719+）调用 money() → ReferenceError: money is not defined
      → render 中断 → 页面只剩「加载中…」。
@@ -904,6 +908,22 @@ function render(s){
   }
 
   pick('#app').innerHTML=h;
+  /* 2026-11-05 P1-8：执行单渲染后**必须绑定勾选事件**。
+     漏了这一步 → 复选框能点但没有监听器 → 勾选状态永远不记录、
+     累计金额永远不更新（界面看着有功能，实际是死的）。
+     这个 bug 是被临时自检钩子（__trimSelfTest）抓出来的，不是看代码看出来的。 */
+  try{ bindTrimPlan(pick('#app')); }catch(e){ console.warn('[FinHub] 执行单勾选绑定失败：'+e.message); }
+  /* 2026-11-05：执行单去重 —— h+= 在多个「我的持仓」分支各追加一次卡片，
+     导致执行单渲染出多份。只保留第一份（不改成单分支，避免其它路径丢功能）。 */
+  try{
+    const trims=[...pick('#app').querySelectorAll('.trim')];
+    if(trims.length>1){
+      /* 优先保留**含勾选框**的那份（有的分支只有 assets、没有 positions → 是空壳） */
+      let keep=trims.find(x=>x.querySelector('input[data-tname]'))||trims[0];
+      trims.forEach(x=>{ if(x!==keep) x.remove(); });
+      console.warn('[FinHub] 执行单重复渲染 '+trims.length+' 份，已去重为 1 份（保留'+(keep.querySelector('input[data-tname]')?'有勾选框的':'(空壳)')+'那份）');
+    }
+  }catch(e){}
   /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」两张卡；
      其余卡标 tier2 折叠——展开开关在 modebar（显示更多），或直接跳 board.html 详情看板。
      关键信息不缺：header 行情条 + _freshness 绿横幅 + 大盘裁决本身都在。 */
@@ -945,6 +965,8 @@ function renderTrimPlan(hd, s){
   var day=String(s&&s.generatedAt||'').slice(0,10);
   if(st.date!==day){ st={date:day, checked:{}}; trimStateSet(st); }
   var ps=(hd.positions||[]).slice().sort(function(a,b2){ return (b2.mv||0)-(a.mv||0); });
+  /* 没有持仓明细 → 不渲染执行单（否则出空壳：有外壳没有勾选表） */
+  if(!ps.length) return '';
   var checkedAmt=0, checkedCnt=0;
   ps.forEach(function(p){
     if(st.checked[p.name]){ checkedAmt+=(p.mv||0); checkedCnt++; }
@@ -952,6 +974,9 @@ function renderTrimPlan(hd, s){
   /* 口径冲突原样标出（IPS status=warn） */
   var ipsItems=((b&&b.ips)||{}).items||[];
   var conflict=ipsItems.filter(function(x){ return /再平衡/.test(x.name||''); })[0];
+  /* 把计算用的原始数据挂到 window，供勾选后**只更新 footer 文本**用
+     （重建整个块会丢勾选态、也会在 DOM 里多出一份 .trim） */
+  window.__trimItems=ps; window.__trimNeed=need;
   var rows=ps.slice(0,12).map(function(p){
     var on=!!st.checked[p.name];
     return `<label class="trow"><input type="checkbox" data-tname="${escHtml(p.name)}" ${on?'checked':''}>
@@ -963,7 +988,7 @@ function renderTrimPlan(hd, s){
     <div class="note">当前敞口 ${cur}% → 硬顶 ${hard}%。金额为按总额等比折算的**参考值**，未做桶级最优分配（引擎暂无桶级明细）；
       ${conflict?('目标带口径存在未决冲突（'+escHtml(conflict.value||'')+'），此处按硬顶 '+hard+'% 计算'):''}</div>
     <div class="trimlist">${rows}</div>
-    <div class="trimfoot">已勾选 <b>${checkedCnt}</b> / ${ps.length} 项 · 合计 <b>${money(checkedAmt)}</b> 元（占需减 ${need?Math.round(checkedAmt/need*100):0}%）
+    <div class="trimfoot" data-trimfoot>已勾选 <b>${checkedCnt}</b> / ${ps.length} 项 · 合计 <b>${money(checkedAmt)}</b> 元${need?(' / 需减 '+money(need)+' 元'):''}${checkedAmt>need?'（已超目标）':''}
       <span class="note">勾选只存在本机（localStorage），不上传</span></div>
   </div>`;
 }
@@ -974,8 +999,19 @@ function bindTrimPlan(root){
         var st=trimStateGet(); var nm=cb.getAttribute('data-tname');
         if(cb.checked) st.checked[nm]=1; else delete st.checked[nm];
         trimStateSet(st);
-        var card=cb.closest('.card');
-        if(card&&window.__lastRender){ card.innerHTML=window.__lastRender; bindTrimPlan(card); }
+        /* 只更新 footer 文本，不重建块：
+           重建会（a）在 DOM 里多出一份 .trim （b）把刚勾的复选框状态冲掉。
+           这里用 window.__trimItems / __trimNeed 重算已勾金额。 */
+        var holder=cb.closest('.trim');
+        var items=window.__trimItems||[], need=window.__trimNeed||0;
+        var foot=holder&&holder.querySelector('[data-trimfoot]');
+        if(foot){
+          var amt=0,cnt=0;
+          items.forEach(function(p){ if(st.checked[p.name]){ amt+=(p.mv||0); cnt++; } });
+          foot.innerHTML='已勾选 <b>'+cnt+'</b> / '+items.length+' 项 · 合计 <b>'+money(amt)+
+            '</b> 元'+(need?(' / 需减 '+money(need)+' 元'):'')+(amt>need?'（已超目标）':'')+
+            ' <span class="note">勾选只存在本机（localStorage），不上传</span>';
+        }
       });
     });
   }catch(e){}

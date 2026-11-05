@@ -241,6 +241,21 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
 #marketbar .mk b{font-weight:600}
 #marketbar .up{color:#ff5c5c}
 #marketbar .dn{color:#2ecc71}
+/* 2026-11-05 P1-8：执行单 */
+.trim{margin:10px 0 4px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)}
+.trim .trimhead{font-size:12.5px;margin-bottom:4px}
+.trim .trimhead b{color:var(--up)}
+.trim .trimlist{display:flex;flex-direction:column;gap:2px;margin:6px 0}
+.trim .trow{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim);cursor:pointer;padding:2px 0}
+.trim .trow .tname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trim .trow .tmv{color:var(--txt);font-variant-numeric:tabular-nums}
+.trim .trow .ttag{font-size:10px;opacity:.6}
+.trim .trimfoot{font-size:11.5px;color:var(--dim);border-top:1px solid var(--line);padding-top:5px;margin-top:4px}
+/* 2026-11-05 P2：可展开的「不可知」明细 */
+details.unk{margin:8px 0 2px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.02)}
+details.unk summary{cursor:pointer;font-size:12px;color:var(--warn);outline:none}
+details.unk .unklist{margin-top:6px;font-size:11.5px;line-height:1.55;color:var(--dim)}
+details.unk .unklist b{color:var(--txt)}
 </style>
 </head>
 <body>
@@ -463,6 +478,10 @@ async function load(){
    ReferenceError: esc is not defined → render 中断 → 整页只剩「加载中…」。
    教训：跨 <script> 块的顶层 const 有执行顺序依赖，不能当全局函数用。
    （同类坑已发生过两次：money、esc。parity C30 现在会自动扫这类隐患。） */
+/* 2026-11-05：money 也提升到**模块顶层**（第三次同类事故：声明在 render() 函数体内，
+   而顶层函数 renderTrimPlan() 用了它 → 作用域不可见 → ReferenceError → 整页只剩「加载中…」）。
+   规则：凡是跨函数共用的常量，一律放模块顶层，不放函数体内。 */
+const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
 const escHtml = x => String(x==null?'':x).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -470,12 +489,13 @@ function render(s){
   /* 2026-11-05 P0：存下 state 供决策条使用（renderExtras 只拿到 board，
      触发证据在 state.engine.evidence 里），并重算首屏决策条。 */
   try{ window.__stateData=s; }catch(e){}
+  /* 2026-11-05 P1-8：保存本次渲染结果，供执行单勾选后就地重绘（不整页刷新） */
+  try{ window.__lastRender=null; }catch(e){}
   /* 2026-11-05 修 TDZ/作用域 bug：money 原先声明在 `if(dsv.signal){...}` 块内，
      而「我的持仓」分支（块外，行 ~719+）调用 money() → ReferenceError: money is not defined
      → render 中断 → 页面只剩「加载中…」。
      触发条件：**个人层可见**（本机 localhost 免口令 / 手机解锁后）；
      个人层锁定时走「待解锁」分支不执行 → 线上一直没暴露。 */
-  const money=x=>x==null?'—':Math.round(x).toLocaleString('zh-CN');
   const e=s.engine||{}, sc=e.scores||{}, m=s.market||{}, b=s.bonds||{}, c=s.commodity||{};
   const act=(e.marketAction||'WAIT');
   const actCls=act==='TRIM'||act==='EXIT'?'trim':(act==='ADD'?'add':'wait');
@@ -522,6 +542,39 @@ function render(s){
         ${bar('硬顶 '+hardTop,pos.hardMaxPct,100,'#7d8b9c')}
       </div>
       <div class="note">来源 ${pos.source||'board.json'} · 快照 asOf ${pos.dataAsOf||'—'}${pos.dataAgeDays!=null?'（'+pos.dataAgeDays+' 天）':''} · 金额与引擎清单属个人层，解锁后可见</div>
+      ${(()=>{
+        /* P2-10 信任度可审计：把「不可知」摆到明面上（信号卡只给"信心 中"是不够的） */
+        const b=boardData();
+        const unks=((b&&b.factors)||{}).unknowns||[];
+        if(!unks.length) return '';
+        const topics=unks.slice(0,3).map(u=>escHtml(u.topic||u.id||''));
+        return `<details class="unk"><summary>已知不可知 ${unks.length} 项（信号的可审计边界）</summary>
+          <div class="unklist">${unks.map(u=>`<div>· <b>${escHtml(u.id||'')}</b> ${escHtml(u.topic||'')}${u.detail?('：'+escHtml(u.detail)):''}</div>`).join('')}</div>
+          <div class="note">示例：${topics.join('；')}${unks.length>3?' …':''}</div></details>`;
+      })()}
+      ${(()=>{
+        /* P1-7 组合回撤可观测性：算不出就说算不出（不是"没风险"，是"看不见"） */
+        const b=boardData();
+        const dd=((b&&b.today)||{}).drawdown;
+        if(!dd) return '';
+        if(dd.observable===false){
+          return `<div class="concl">· 组合回撤：<b>不可观测</b>${dd.reason?('（'+escHtml(dd.reason)+'）'):''}${dd.asOf?(' · 截至 '+escHtml(dd.asOf)):''}</div>`;
+        }
+        if(dd.valuePct!=null){
+          return `<div class="concl">· 组合回撤：${Number(dd.valuePct).toFixed(2)}%${dd.asOf?(' · 截至 '+escHtml(dd.asOf)):''}</div>`;
+        }
+        return '';
+      })()}
+      ${(()=>{
+        /* P1-9 漂移对比：与上一次快照比（序列不足时明说"暂无对比"，不用假数据） */
+        const b=boardData();
+        const hist=((b&&b.today)||{}).positionHistory||[];
+        if(hist.length<2) return `<div class="note">漂移对比：暂无对比（需要连续快照，当前 ${hist.length} 条）</div>`;
+        const prev=hist[hist.length-2], cur=hist[hist.length-1];
+        const d=(cur.currentPct!=null&&prev.currentPct!=null)?(Math.round((cur.currentPct-prev.currentPct)*100)/100):null;
+        const dTxt=d==null?'—':(d>0?('+'+d+' 个百分点（敞口上升）'):(d<0?('减 '+Math.abs(d)+' 个百分点（敞口下降）'):'持平'));
+        return `<div class="concl">· 较 ${escHtml(prev.date||'上一期')}（${prev.currentPct}% → ${cur.currentPct}%）：${dTxt}</div>`;
+      })()}
       ${(pos.currentPct!=null&&pos.hardMaxPct!=null)?((pos.currentPct-pos.hardMaxPct)>0.05
         ? `<div class="concl">· 需降 <b>${(Math.round((pos.currentPct-pos.hardMaxPct)*100)/100)}</b> 个百分点才能到硬顶 ${pos.hardMaxPct}%（按 ${pos.currentPct}% 计）</div>`
         : `<div class="concl">· 已低于硬顶 ${pos.hardMaxPct}%</div>`):''}
@@ -740,8 +793,11 @@ function render(s){
         <div class="note">${hMsg}</div></div>`;
   }else{
     const pnlCls=cls(hd.totalPnl);
+    /* 2026-11-05 P1-8：执行单（仅解锁态有金额时才生成） */
+    const trimPlan=renderTrimPlan(hd, s);
     h+=`<div class="card">
       <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'}</span></h2>
+      ${trimPlan}
       <div class="sum">
         <div class="s"><div class="n">总资产（市值+现金）</div>
           <div class="p">${money(hd.assets)}</div></div>
@@ -865,6 +921,66 @@ function render(s){
        "今天该不该动手"的核心，折叠起来等于没有；
      · 卡片是 h+= 拼字符串，条是独立元素 → 可被 headless 直接断言存在性。
    ══════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   2026-11-05 P1-8：调仓执行单（解锁态才渲染）
+   诚实边界：
+   · 引擎没有桶级明细 → 只给总额 + 按市值排序的勾选表，**不做假装精确的桶级分摊**
+   · 目标带口径有冲突（研究引擎 [8,15] vs 生产规则 [8,22]，IPS status=warn 未决）
+     → 执行单必须写明按哪条算，并把冲突原样标出
+   · 勾选状态只存本机 localStorage（个人层，不上传、不进公开仓）
+   ══════════════════════════════════════════════════════════════════ */
+const TRIM_STORE='finhub.trimPlan.v1';
+function trimStateGet(){
+  try{ return JSON.parse(localStorage.getItem(TRIM_STORE)||'{}')||{}; }catch(e){ return {}; }
+}
+function trimStateSet(v){ try{ localStorage.setItem(TRIM_STORE, JSON.stringify(v)); }catch(e){} }
+function renderTrimPlan(hd, s){
+  var b=boardData(), bt=(b&&b.today)||{};
+  var pos=bt.position||{}, cur=pos.currentPct, hard=pos.hardMaxPct;
+  var assets=hd.assets;
+  if(cur==null||hard==null||!assets) return '';
+  var need=Math.round(assets*(cur-hard)/100);
+  var st=trimStateGet();
+  var day=String(s&&s.generatedAt||'').slice(0,10);
+  if(st.date!==day){ st={date:day, checked:{}}; trimStateSet(st); }
+  var ps=(hd.positions||[]).slice().sort(function(a,b2){ return (b2.mv||0)-(a.mv||0); });
+  var checkedAmt=0, checkedCnt=0;
+  ps.forEach(function(p){
+    if(st.checked[p.name]){ checkedAmt+=(p.mv||0); checkedCnt++; }
+  });
+  /* 口径冲突原样标出（IPS status=warn） */
+  var ipsItems=((b&&b.ips)||{}).items||[];
+  var conflict=ipsItems.filter(function(x){ return /再平衡/.test(x.name||''); })[0];
+  var rows=ps.slice(0,12).map(function(p){
+    var on=!!st.checked[p.name];
+    return `<label class="trow"><input type="checkbox" data-tname="${escHtml(p.name)}" ${on?'checked':''}>
+      <span class="tname">${escHtml(p.name)}</span><span class="tmv">${money(p.mv)}</span>
+      <span class="ttag">${escHtml(p.type||'')}</span></label>`;
+  }).join('');
+  return `<div class="trim">
+    <div class="trimhead">调仓执行单（参考）· 按硬顶 ${hard}% 口径，需减 <b>${money(need)}</b> 元</div>
+    <div class="note">当前敞口 ${cur}% → 硬顶 ${hard}%。金额为按总额等比折算的**参考值**，未做桶级最优分配（引擎暂无桶级明细）；
+      ${conflict?('目标带口径存在未决冲突（'+escHtml(conflict.value||'')+'），此处按硬顶 '+hard+'% 计算'):''}</div>
+    <div class="trimlist">${rows}</div>
+    <div class="trimfoot">已勾选 <b>${checkedCnt}</b> / ${ps.length} 项 · 合计 <b>${money(checkedAmt)}</b> 元（占需减 ${need?Math.round(checkedAmt/need*100):0}%）
+      <span class="note">勾选只存在本机（localStorage），不上传</span></div>
+  </div>`;
+}
+function bindTrimPlan(root){
+  try{
+    (root||document).querySelectorAll('input[data-tname]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        var st=trimStateGet(); var nm=cb.getAttribute('data-tname');
+        if(cb.checked) st.checked[nm]=1; else delete st.checked[nm];
+        trimStateSet(st);
+        var card=cb.closest('.card');
+        if(card&&window.__lastRender){ card.innerHTML=window.__lastRender; bindTrimPlan(card); }
+      });
+    });
+  }catch(e){}
+}
+
 function boardData(){ return window.__extrasData || window.__boardData || null; }
 function stateData(){ return window.__stateData || null; }
 
@@ -911,11 +1027,24 @@ function renderDevBar(){
     var st=String(d.status||'');
     return (sev==='high'||sev==='medium') && st.indexOf('未执行')>=0;
   });
-  if(!hit.length){ el.hidden=true; return; }
-  var parts=hit.map(function(d){ return (d.severity==='high'?'[高]':'[中]')+(d.title||d.id||''); });
+  /* P1-10：口径未决项（IPS 里 status=warn/gap）—— 用户每天照信号执行，
+     却在执行一套口径未决的规则；这些此前只在 IPS tab 里，首屏看不到。 */
+  var ipsUnres=(((b&&b.ips)||{}).items||[]).filter(function(x){
+    return x.status==='warn'||x.status==='gap';
+  });
+  if(!hit.length && !ipsUnres.length){ el.hidden=true; return; }
+  var segs=[];
+  if(hit.length){
+    var parts=hit.map(function(d){ return (d.severity==='high'?'[高]':'[中]')+(d.title||d.id||''); });
+    segs.push('⚠ 已知未执行偏差 '+hit.length+' 条（系统已登记、你还没执行）：'+parts.join('；'));
+  }
+  if(ipsUnres.length){
+    segs.push('⚑ 口径未决 '+ipsUnres.length+' 项（你正照着它执行）：'+
+      ipsUnres.map(function(x){ return '['+escHtml(x.name||'')+']'+escHtml(x.value||''); }).join('；'));
+  }
   el.className='freshbar bad';
   el.innerHTML='';
-  el.appendChild(document.createTextNode('⚠ 已知未执行偏差 '+hit.length+' 条（系统已登记、你还没执行）：'+parts.join('；')+'　→ 治理页「规则」可展开'));
+  el.appendChild(document.createTextNode(segs.join('　｜　')+'　→ 治理页「IPS」可展开'));
   el.hidden=false;
 }
 
@@ -941,14 +1070,36 @@ function renderDecisionBars(){
   try{ renderNotifBar(); }catch(e){}
 }
 
+/* 2026-11-05：一级屏保留清单（集中成常量，便于核对）。
+   为什么集中：以前是内联正则，新增卡片忘了加进来就会「上线即隐身」
+   （折叠规则藏在正则里，谁加卡片谁得记得改它，且没有任何提示）。 */
+const TIER1_TITLES = ['大盘裁决','个人层','今日信号卡','我的持仓','告警'];
+
 function classifyTier2(){
-  /* 2026-11-04 ② 一级屏收纳：默认只保留「大盘裁决」「个人层」；其余卡 (含 xcard) tier2 折叠 */
+  /* 一级屏收纳：默认只保留「大盘裁决」「个人层」「今日信号卡」「我的持仓」「告警」；
+     其余卡 (含 xcard) 折叠。两种保留方式：显式 data-tier="1"（推荐），或标题命中白名单。 */
   try{
-    const keep=/^(大盘裁决|个人层|今日信号卡|我的持仓|告警)/;
-    [...pick('#app').querySelectorAll('.card, .xcard')].forEach(c=>{
-      const het=((c.querySelector('h2, h3')||{}).textContent||'');
-      if(!keep.test(het)) c.classList.add('tier2');
+    const cards=[...pick('#app').querySelectorAll('.card, .xcard')];
+    const seen=new Set(), unregistered=[];
+    cards.forEach(c=>{
+      const het=((c.querySelector('h2, h3')||{}).textContent||'').trim();
+      const explicit=c.dataset.tier==='1';
+      const byTitle=TIER1_TITLES.some(k=>het.indexOf(k)===0);
+      const keep=explicit||byTitle;
+      c.classList.toggle('tier2', !keep);
+      if(het) seen.add(het.replace(/\s+/g,' ').trim());
+      /* 自检：页面上有、但既没显式标记也没命中白名单的卡片 → 说明新卡片忘了登记。
+         这类卡片会被折叠掉（用户看不见），必须让人知道，而不是靠记忆。 */
+      if(!keep && het && !explicit && !byTitle) unregistered.push(het.replace(/\s+/g,' ').trim());
     });
+    /* 白名单里已不存在的条目 → 说明卡片被删/改名，清单过时了 */
+    const stale=TIER1_TITLES.filter(k=>!Array.from(seen).some(h=>h.indexOf(k)===0));
+    window.__tierAudit={unregistered:unregistered, stale:stale, seen:Array.from(seen)};
+    if(unregistered.length||stale.length){
+      console.warn('[FinHub] tier2 登记自检：未登记卡片=' + JSON.stringify(unregistered) +
+                  ' ｜ 清单中已不存在的条目=' + JSON.stringify(stale) +
+                  '（未登记的卡片会被折叠隐藏；请给卡片加 data-tier="1" 或把标题加进 TIER1_TITLES）');
+    }
   }catch(e){}
 }
 function bar(lab,v,max,col){

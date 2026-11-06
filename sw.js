@@ -7,7 +7,7 @@
    一旦缓存里存下 404 页面，弱网时就会拿它兜底 → 主页看起来永久 404。
    现在只缓存 r.ok 的响应；缓存里的旧 404 在 activate 时随旧 cache 一起清掉。
 */
-const CACHE = 'finhub-v3';
+const CACHE = 'finhub-v4';
 
 self.addEventListener('install', e => { self.skipWaiting(); });
 

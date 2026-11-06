@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,10 +14,31 @@
 <meta name="apple-mobile-web-app-title" content="FinHub">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
+/* ── 设计 token（37 条）· 规格来源 docs/04-UI重构规范.md §1 ──
+   颜色 11 条沿用原值（视觉不变）；间距/字号/圆角/阴影/动效/触摸/安全区/布局 为 2026-11-06 新增。
+   全部集中在本 :root 块内，便于机械校验「:root 自定义属性 ≥ 37」。 */
 :root{
   --bg:#0a0e14; --card:#121820; --card2:#18202b; --line:#1f2a37;
   --txt:#e6edf3; --dim:#7d8b9c; --up:#f6465d; --dn:#0ecb81; --acc:#4c8dff;
   --warn:#f5a524; --ok:#0ecb81;
+  /* 间距（4pt 阶）*/
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:28px; --sp-8:32px;
+  /* 字号 */
+  --fs-xs:11px; --fs-sm:13px; --fs-md:15px; --fs-lg:17px; --fs-xl:20px; --fs-2xl:24px;
+  /* 圆角 */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+  /* 阴影 */
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 4px 16px rgba(0,0,0,.45);
+  /* 动效 */
+  --t-fast:120ms; --t-med:240ms;
+  /* 触摸目标最小边长（安卓 44px）*/
+  --tap:44px;
+  /* 安全区（刘海 / 底部手势条）*/
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  /* 布局 */
+  --pad-x:16px; --maxw:1120px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -205,7 +226,7 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
 #page-gov .bar>i{display:block;height:100%;background:var(--acc)}
 #page-gov .ok{color:var(--ok)}
 #page-gov .warn{color:var(--warn)}
-#page-gov .bad{color:var(--bad)}
+#page-gov .bad{color:var(--up)}
 #page-gov .dim{color:var(--dim)}
 #page-gov .num{text-align:right;font-variant-numeric:tabular-nums}
 #page-gov .pill{border:1px solid var(--line);border-radius:4px;margin:0 4px 0 0;vertical-align:baseline}
@@ -224,16 +245,205 @@ body.showall #app .card.tier2, body.showall #app .xcard.tier2{display:block}
 #page-gov .reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}
 #page-gov .govfoot{display:flex;gap:10px;justify-content:space-between;align-items:center;
   margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
-@media (max-width:560px){
-  #page-gov .kv{grid-template-columns:88px 1fr}
-  #page-gov table,#page-gov thead,#page-gov tbody,#page-gov tr,#page-gov td,#page-gov th{display:block;width:auto}
-  #page-gov thead{display:none}
-  #page-gov tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#0d141e}
-  #page-gov td{border:0;padding:3px 0}
-  #page-gov td.num{text-align:left}
-  #page-gov td:first-child{font-size:13px}
+/* ══════════════════════════════════════════════════════════════════════
+   UI 重构层 · 2026-11-06 · 安卓手机优先
+   规格来源：docs/04-UI重构规范.md（37 token / 4 档断点 / 安卓 12 条 / 首屏 P0–P3）
+   策略：覆盖层 —— 既有精确调校过的规则保留不动，本层在其上建立 token 化、
+        4 档响应式、安卓专项、首屏层级与底部 tab。DOM 与 JS 逻辑不动。
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── §5 通用：hidden 属性必须压过任何 display 规则 ──
+   既有 bug：`#marketbar{display:flex}` 是 ID 选择器，会盖掉 UA 的 [hidden]，
+   导致「隐藏的」行情条仍占 16px 高度并露出边框（真实数据截图可见的空行）。
+   规范 §5 要求统一用 !important 兜底。 */
+[hidden]{display:none !important}
+
+/* ── §3 A-2/A-6/A-9 根、安全区、滚动穿透 ── */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;
+  min-height:100dvh;overscroll-behavior-y:contain}
+html,body{overscroll-behavior-y:contain}
+body{min-height:100dvh;font-size:var(--fs-md);padding:0 0 var(--safe-b)}
+
+/* ── §3 A-7 触摸反馈（scale(.98) 可被 Playwright 读到 matrix(0.98…)）── */
+button,a,[role=button]{touch-action:manipulation}
+button:active,a:active,[role=button]:active{transform:scale(.98);background:var(--card2);
+  transition:transform var(--t-fast),background var(--t-fast)}
+
+/* ── §3 A-1 触摸目标 ≥44px：用盒子撑，不靠伪元素（便于自动测量）──
+   注意：下面第二条规则的特异性必须 ≥ 既有规则（#modebar button / .ab / .xbtn 等），
+   否则 36px 的旧值会赢 —— 这条是实测踩过的坑。 */
+button,a[href],input:not([type=checkbox]),select,label.t2toggle{min-width:var(--tap);min-height:var(--tap)}
+#modebar button,#t2bar .t2toggle,.ab,.xbtn,.lnbtn,#page-gov button,#page-gov input,
+#page-hold button,#page-hold input,#page-hold textarea,#kbtn,#kin{
+  min-width:var(--tap);min-height:var(--tap)}
+#t2bar .t2toggle{padding:0 var(--sp-2)}
+.ab{padding:var(--sp-2) var(--sp-3)}
+
+/* ── §3 A-8 输入框 16px：<16px 会触发安卓 WebView 自动放大 ── */
+input,textarea,select{font-size:16px}
+.row input,#page-hold input,#page-hold textarea,#page-hold select{font-size:16px;line-height:1.5}
+
+/* ── §3 A-12 软键盘不遮挡提交 ── */
+#htext{max-height:40dvh;overflow-y:auto}
+#hsubmit{scroll-margin-bottom:calc(var(--tap) + var(--safe-b))}
+
+/* ── §3 A-5 减少动画（系统「移除动画」）── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+/* ── §3 A-4 触摸设备（pointer: coarse）── */
+@media (pointer:coarse){
+  button,a[href],input:not([type=checkbox]),select,label.t2toggle{min-width:var(--tap);min-height:var(--tap)}
+  button:active,a:active{transform:scale(.96)}
 }
 
+/* ── §1.10 / §2 页面容器：1280 视口 clientWidth === 1120 ── */
+.wrap{max-width:var(--maxw);margin:0 auto;
+  padding:var(--sp-3) var(--pad-x) calc(var(--tap) + var(--safe-b) + var(--sp-4))}
+
+/* ── §4 首屏：粘性顶栏（P0 时间 + 出口第二行）── */
+header{position:sticky;top:0;z-index:100;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-1);
+  padding:calc(var(--sp-2) + var(--safe-t)) 0 var(--sp-2);margin:0 0 var(--sp-3);
+  background:rgba(10,14,20,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line)}
+header .brand{font-size:var(--fs-xl);font-weight:700;letter-spacing:.5px}
+header .ts{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.2}
+#now{font-size:var(--fs-xl);font-weight:600;color:var(--txt)}
+#gen{font-size:var(--fs-sm);color:var(--dim)}
+#t2bar{flex:0 0 100%;display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-1)}
+#t2bar .golink,#golink{min-height:var(--tap);display:inline-flex;align-items:center;
+  color:var(--acc);font-size:var(--fs-sm);text-decoration:none;padding-right:var(--sp-2)}
+.t2toggle{min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--sp-1);
+  color:var(--dim);font-size:var(--fs-xs);cursor:pointer;padding:0 var(--sp-2)}
+.t2toggle input{width:20px;height:20px;min-width:20px;min-height:20px;accent-color:var(--acc)}
+
+/* ── §4 P1/P2/P3 状态条分级 ── */
+.freshbar{font-size:var(--fs-sm);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-sm);
+  border-left:3px solid var(--dim);margin:0 0 var(--sp-3)}
+.freshbar.ok{border-left-color:var(--ok)}
+.freshbar.warn{border-left-color:var(--warn)}
+.freshbar.bad{border-left-color:var(--up)}
+#actionbar{background:var(--card2);border-left-color:var(--acc);font-size:var(--fs-md);min-height:48px}
+#devbar,#notifbar{font-size:var(--fs-xs);min-height:32px;color:var(--dim)}
+
+/* ── §5.1 卡片 ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--sh-1);padding:var(--sp-3);margin-bottom:var(--sp-3)}
+.card h2{font-size:var(--fs-lg);margin:0 0 var(--sp-2);color:var(--txt);font-weight:600}
+.xcard{border-radius:var(--r-md);box-shadow:var(--sh-1)}
+
+/* ── §2 #app 网格：≤767 一列 / 768–1024 两列 / ≥1025 三列 ──
+   ⚠️ grid 陷阱：`1fr` 的最小值是 auto(=min-content)，子项里的长数字/长表格会把整列
+   撑破视口（实测真实数据下 393 视口溢出 58px，而合成短数据的测试是绿的）。
+   所以必须用 minmax(0,1fr) 且子项 min-width:0。 */
+#app{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-3);align-items:start}
+#app>*{min-width:0}
+#app>.card,#app>.xcard{margin-bottom:0;min-width:0}
+
+/* ── §2.1 手机档（主）≤430：底部固定 tab + 表格 100% 卡片化 ── */
+@media (max-width:430px){
+  .card{padding:var(--sp-3)}
+  .card h2{font-size:var(--fs-lg)}
+  #app{grid-template-columns:minmax(0,1fr);gap:var(--sp-3)}
+  #modebar{position:fixed;left:0;right:0;bottom:0;z-index:100;
+    display:flex;align-items:stretch;gap:0;margin:0;padding:0 0 var(--safe-b);
+    background:rgba(10,14,20,.96);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:var(--sh-2)}
+  #modebar button[data-page]{flex:1 1 0;min-width:var(--tap);min-height:var(--tap);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:none;border:none;border-radius:0;color:var(--dim);
+    font-size:var(--fs-xs);font-weight:600;cursor:pointer;padding:var(--sp-1) 0}
+  #modebar button[data-page].on{background:none;color:var(--acc);box-shadow:inset 0 2px 0 var(--acc)}
+  #modebar #localnotif{flex:0 0 auto;min-width:var(--tap);min-height:var(--tap);
+    display:flex;align-items:center;justify-content:center;background:none;border:none;
+    border-radius:0;color:var(--dim);font-size:var(--fs-sm);padding:0 var(--sp-3)}
+  #modebar #localnotif.on{color:var(--dn)}
+  /* 表格 → 卡片（§5.5）：标签取自 td[data-label] */
+  table,thead,tbody,tr,td,th{display:block;width:auto}
+  thead{display:none}
+  tr{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);
+    margin-bottom:var(--sp-2);background:var(--card2)}
+  td{border:0;padding:var(--sp-1) 0;display:flex;justify-content:space-between;gap:var(--sp-3);
+    align-items:baseline;text-align:left}
+  td::before{content:attr(data-label);color:var(--dim);font-size:var(--fs-xs);flex:0 0 auto}
+  td:first-child{font-size:var(--fs-md);font-weight:600}
+}
+
+/* ── §2.1 大手机 / 小平板 431–767 ── */
+@media (min-width:431px) and (max-width:767px){
+  .card{padding:var(--sp-4)}
+  .card h2{font-size:var(--fs-xl)}
+  #app{grid-template-columns:minmax(0,1fr);gap:var(--sp-3)}
+  #app>.card,#app>.xcard{max-width:640px;margin-left:auto;margin-right:auto}
+  #modebar{position:fixed;left:0;right:0;bottom:0;z-index:100;
+    display:flex;align-items:stretch;gap:0;margin:0;padding:0 0 var(--safe-b);
+    background:rgba(10,14,20,.96);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:var(--sh-2)}
+  #modebar button[data-page]{flex:1 1 0;min-width:var(--tap);min-height:var(--tap);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:none;border:none;border-radius:0;color:var(--dim);
+    font-size:var(--fs-xs);font-weight:600;cursor:pointer;padding:var(--sp-1) 0}
+  #modebar button[data-page].on{background:none;color:var(--acc);box-shadow:inset 0 2px 0 var(--acc)}
+  #modebar #localnotif{flex:0 0 auto;min-width:var(--tap);min-height:var(--tap);
+    display:flex;align-items:center;justify-content:center;background:none;border:none;
+    border-radius:0;color:var(--dim);font-size:var(--fs-sm);padding:0 var(--sp-3)}
+  #modebar #localnotif.on{color:var(--dn)}
+  table,thead,tbody,tr,td,th{display:block;width:auto}
+  thead{display:none}
+  tr{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);
+    margin-bottom:var(--sp-2);background:var(--card2)}
+  td{border:0;padding:var(--sp-1) 0;display:flex;justify-content:space-between;gap:var(--sp-3);
+    align-items:baseline;text-align:left}
+  td::before{content:attr(data-label);color:var(--dim);font-size:var(--fs-xs);flex:0 0 auto}
+  td:first-child{font-size:var(--fs-md);font-weight:600}
+}
+
+/* ── §2.1 平板 768–1024：两列 + 顶部横向导航 + 原生表格 ── */
+@media (min-width:768px) and (max-width:1024px){
+  .card{padding:var(--sp-4)}
+  .card h2{font-size:var(--fs-xl)}
+  #app{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-4)}
+  .wrap{padding-bottom:var(--sp-6)}
+  #modebar{position:sticky;top:calc(56px + var(--safe-t));z-index:90;
+    display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:0 0 var(--sp-3);padding:0;
+    background:rgba(10,14,20,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:0;box-shadow:var(--sh-1)}
+  #modebar button[data-page]{min-width:0;padding:var(--sp-2) var(--sp-4);border-radius:var(--r-pill)}
+  #modebar #localnotif{min-width:0;padding:var(--sp-2) var(--sp-3)}
+}
+
+/* ── 防内容撑破（真实数据实测：长数字/长表格会撑破网格列）── */
+.card,.xcard{min-width:0;overflow-wrap:anywhere}
+td,th{min-width:0;overflow-wrap:anywhere}
+td>*{min-width:0}
+table{max-width:100%}
+@media (min-width:431px) and (max-width:767px){
+  #app>.card,#app>.xcard{max-width:640px;margin-left:auto;margin-right:auto;min-width:0}
+}
+/* ── §2.1 桌面 ≥1025：三列 + 顶部横向导航 ── */
+@media (min-width:1025px){
+  .card{padding:var(--sp-6)}
+  .card h2{font-size:var(--fs-xl)}
+  #app{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4)}
+  .wrap{padding-bottom:var(--sp-8)}
+  #modebar{position:sticky;top:calc(56px + var(--safe-t));z-index:90;
+    display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:0 0 var(--sp-3);padding:0;
+    background:rgba(10,14,20,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:0;box-shadow:var(--sh-1)}
+  #modebar button[data-page]{min-width:0;padding:var(--sp-2) var(--sp-4);border-radius:var(--r-pill)}
+  #modebar #localnotif{min-width:0;padding:var(--sp-2) var(--sp-3)}
+}
+
+/* ── 防内容撑破（真实数据实测：长数字/长表格会撑破网格列）── */
+.card,.xcard{min-width:0;overflow-wrap:anywhere}
+td,th{min-width:0;overflow-wrap:anywhere}
+td>*{min-width:0}
+table{max-width:100%}
+@media (min-width:431px) and (max-width:767px){
+  #app>.card,#app>.xcard{max-width:640px;margin-left:auto;margin-right:auto;min-width:0}
+}
 /* ── 双横幅修复：治理页内部横幅隐藏，只保留顶部 #freshbar ── */
 #page-gov #govfreshbar, #govfreshbar{ display:none !important; }
 #marketbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;font-variant-numeric:tabular-nums}
@@ -267,7 +477,12 @@ details.unk .unklist b{color:var(--txt)}
 <div class="wrap">
   <header>
     <div class="brand">Fin<span>Hub</span></div>
-    <div class="ts"><div id="now">--:--</div><div id="gen" style="color:#7d8b9c"></div></div>
+    <div class="ts"><div id="now">--:--</div><div id="gen"></div></div>
+    <!-- 出口行：2026-11-06 UI 重构，从 #modebar 移到粘性顶栏第二行
+         （需求 §3.2.2 视觉层级：P0 数据时间 → 出口「详情看板 →」；规范 §4.1）。
+         JS 侧按 id 查找（getElementById('t2show')），移动 DOM 不影响绑定。 -->
+    <span id="t2bar"><a href="board.html" class="golink">详情看板 →</a>
+      <label class="t2toggle"><input id="t2show" type="checkbox">显示更多</label></span>
   </header>
   <div id="freshbar" class="freshbar" hidden></div>
   <div id="marketbar" class="freshbar marketbar" hidden></div>
@@ -276,8 +491,6 @@ details.unk .unklist b{color:var(--txt)}
     <button data-page="gov">治理</button>
     <button data-page="hold">持仓上传</button>
     <button id="localnotif" class="lnbtn" title="页面打开时，信号变化就弹系统通知（不需要配任何凭据）">🔔 本地提醒</button>
-    <span id="t2bar"><a href="board.html" class="golink">详情看板 →</a>
-      <label class="t2toggle"><input id="t2show" type="checkbox">显示更多</label></span>
   </nav>
   <div id="page-live">
     <!-- 2026-11-05 P0：首屏决策条（行动指引 / 已知未执行偏差 / urgent 通知）。
@@ -403,9 +616,20 @@ async function auditRecent(root){
   }catch(e){ return []; }
 }
 
+/* ── 离线快照缓存（A-06 / 需求 §5.2 A-06）────────────────────────────
+   手机端断网是常态：三个数据源全失败时不能白屏，要出上一份快照并**标注数据时间**。
+   复用 board.json 已有的 localStorage 缓存模式（见 fetchBoard 的 BOARD_CACHE_KEY）。
+   公开层 state.json 不含个人层，可安全落 localStorage。 */
+const STATE_CACHE_KEY='fh_state_cache';
+function writeStateCache(d){
+  try{ localStorage.setItem(STATE_CACHE_KEY,JSON.stringify({data:d,at:new Date().toISOString()})); }catch(e){}
+}
+function readStateCache(){
+  try{ const r=JSON.parse(localStorage.getItem(STATE_CACHE_KEY)||'null'); return (r&&r.data)?r:null; }catch(e){ return null; }
+}
 async function load(){
   const bust='_='+Date.now();
-  let base=null, err=null;
+  let base=null, err=null, fromNetwork=false;
   /* 1) 基线：本机页面优先读本地完整快照；手机读 GitHub raw（含 tunnelUrl） */
   const IS_LOCAL=/^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   const SOURCES=IS_LOCAL?[DATA_LOCAL,...DATA_REMOTES]:[...DATA_REMOTES,DATA_LOCAL];
@@ -424,9 +648,21 @@ async function load(){
     }catch(e){ err=e; }
   }
   if(!base){
-    pick('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
-    return;
+    /* A-06：全部数据源不可达 → 用上一份本地快照兜底，并标注「离线快照 + 数据时间」。
+       没有快照才报错（不白屏，也绝不伪装成有数据）。 */
+    const cached=readStateCache();
+    if(cached&&cached.data){
+      base=cached.data;
+      snapSrc='离线快照';
+      lastSource='离线快照';
+    }else{
+      pick('#app').innerHTML='<div class="card"><span class="err">读取失败：'+(err?err.message:'无数据')+'</span></div>';
+      return;
+    }
+  } else {
+    fromNetwork=true;
   }
+  if(fromNetwork) writeStateCache(base);
 
   /* 2) 有隧道地址就直连拿实时（不走 CDN 缓存）
         分层：公开仓库只有市场层；持仓/新闻/告警/链式推演属于个人层，

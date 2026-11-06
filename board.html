@@ -6,66 +6,174 @@
 <meta name="theme-color" content="#0a0e14">
 <title>治理看板 · IPS / 因子 / 新闻 / 推演</title>
 <style>
-:root{--bg:#0a0e14;--card:#111823;--line:#1e2a3a;--txt:#d8e2ef;--dim:#6b7f96;
---ok:#3ddc97;--warn:#ffb340;--bad:#ff5c5c;--acc:#4da3ff}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
-header{position:sticky;top:0;z-index:9;background:linear-gradient(180deg,#0a0e14 70%,rgba(10,14,20,0));padding:14px 16px 18px}
-h1{font-size:17px;margin:0;display:flex;align-items:center;gap:8px}
-h1 small{font-weight:400;color:var(--dim);font-size:11px}
-.meta{color:var(--dim);font-size:11px;margin-top:4px}
-nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 0;-webkit-overflow-scrolling:touch}
+/* FinHub board.html · 安卓手机优先 UI（依 docs/04-UI重构规范.md）
+   token 与 index.html 同构（37 条，值逐字一致）；断点 430/767/1024 四档 */
+:root{
+--bg:#0a0e14;--card:#121820;--card2:#18202b;--line:#1f2a37;--txt:#e6edf3;--dim:#7d8b9c;
+--up:#f6465d;--dn:#0ecb81;--acc:#4c8dff;--warn:#f5a524;--ok:#0ecb81;
+--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+--fs-xs:11px;--fs-sm:13px;--fs-md:15px;--fs-lg:17px;--fs-xl:20px;--fs-2xl:24px;
+--r-sm:8px;--r-md:12px;--r-lg:16px;--r-pill:999px;
+--sh-1:0 1px 2px rgba(0,0,0,.4);--sh-2:0 4px 16px rgba(0,0,0,.45);
+--t-fast:120ms;--t-med:240ms;--tap:44px;
+--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+--pad-x:16px;--maxw:1120px}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:contain}
+body{margin:0;background:var(--bg);color:var(--txt);
+font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+font-size:var(--fs-md);line-height:1.6;-webkit-tap-highlight-color:transparent;
+overscroll-behavior-y:contain;min-height:100vh;min-height:100dvh;
+padding:0 0 calc(var(--tap) + var(--safe-b) + var(--sp-4))}
+button,a,[role=button]{touch-action:manipulation}
+button{font-family:inherit;font-size:var(--fs-sm);min-width:var(--tap);min-height:var(--tap);
+border-radius:var(--r-sm);cursor:pointer;
+transition:transform var(--t-fast),background var(--t-fast),border-color var(--t-fast)}
+input,textarea,select{font-family:inherit;font-size:16px;min-width:var(--tap);min-height:var(--tap)}
+a{min-height:var(--tap);color:var(--acc);display:inline-flex;align-items:center}
+header{position:sticky;top:0;z-index:100;background:var(--bg);
+padding:calc(var(--sp-2) + var(--safe-t)) var(--pad-x) var(--sp-2);box-shadow:var(--sh-2)}
+h1{font-size:var(--fs-2xl);margin:0;display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+h1 small{font-weight:400;color:var(--dim);font-size:var(--fs-xs)}
+.meta{color:var(--dim);font-size:var(--fs-sm);margin-top:var(--sp-1);overflow-wrap:anywhere}
+nav{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-3) var(--pad-x) var(--sp-1)}
 nav button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
-padding:6px 12px;border-radius:999px;font-size:12px;cursor:pointer}
-nav button.on{background:var(--acc);border-color:var(--acc);color:#04101f;font-weight:600}
-main{padding:14px 16px}
-.card{overflow-wrap:anywhere;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-.card h2{font-size:14px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
-.card h2 .tag{font-size:10px;padding:2px 7px;border-radius:999px;background:#0b1220;color:var(--dim);border:1px solid var(--line)}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--dim);font-weight:500;font-size:11px}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
-.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.dim{color:var(--dim)}
-.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--dim);margin-right:4px}
-.pill.ok{color:var(--ok);border-color:#1d4b3a}.pill.warn{color:var(--warn);border-color:#4b3d1d}.pill.bad{color:var(--bad);border-color:#4b1d1d}
-.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:12.5px}
+padding:0 var(--sp-3);border-radius:var(--r-pill);font-weight:600;white-space:nowrap;
+display:inline-flex;align-items:center;justify-content:center}
+nav button.on{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+main{padding:var(--sp-2) var(--pad-x) var(--sp-4)}
+.card{overflow-wrap:anywhere;background:var(--card);border:1px solid var(--line);
+border-radius:var(--r-md);padding:var(--sp-3);margin-bottom:var(--sp-3);box-shadow:var(--sh-1)}
+.card h2{font-size:var(--fs-lg);margin:0 0 var(--sp-2);display:flex;justify-content:space-between;
+align-items:center;gap:var(--sp-2);font-weight:600}
+.tag{font-size:var(--fs-xs);padding:2px var(--sp-2);border-radius:var(--r-pill);
+background:var(--card2);color:var(--dim);white-space:nowrap}
+/* 顶部双口径区（F-22）：信号卡口径在前、台账口径在后，同级并排、互不覆盖 */
+.dual{display:grid;grid-template-columns:1fr;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.dual>.card{margin-bottom:0;border-top-width:2px}
+.cal-sig{border-top-color:var(--acc)}
+.cal-led{border-top-color:var(--dim)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--up)}.dim{color:var(--dim)}
+.xs{font-size:var(--fs-xs)}.sm{font-size:var(--fs-sm)}.md{font-size:var(--fs-md)}
+.note{font-size:var(--fs-xs);color:var(--dim);line-height:1.5}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mt2{margin-top:var(--sp-2)}
+.quote{border-left:2px solid var(--line);padding-left:var(--sp-3);margin-bottom:var(--sp-3)}
+.pre{white-space:pre-wrap}
+.pill{display:inline-block;font-size:var(--fs-xs);padding:1px var(--sp-1);border-radius:var(--r-sm);
+border:1px solid var(--line);color:var(--dim);margin-right:var(--sp-1)}
+.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.warn{color:var(--warn);border-color:var(--warn)}
+.pill.bad{color:var(--up);border-color:var(--up)}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:var(--sp-2) var(--sp-3);font-size:var(--fs-sm)}
 .kv div:nth-child(odd){color:var(--dim)}
-.hops{border-left:2px solid var(--line);margin-left:6px;padding-left:12px}
-.hop{margin-bottom:10px;position:relative}
-.hop::before{content:"";position:absolute;left:-17px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
-.hop b{font-size:12.5px}
-.bar{height:6px;background:#0b1220;border-radius:3px;overflow:hidden;margin-top:4px}
+.kv b{font-variant-numeric:tabular-nums}
+.hops{border-left:2px solid var(--line);margin-left:var(--sp-2);padding-left:var(--sp-3)}
+.hop{margin-bottom:var(--sp-3);position:relative}
+.hop::before{content:"";position:absolute;left:-17px;top:6px;width:8px;height:8px;
+border-radius:50%;background:var(--acc)}
+.hop b{font-size:var(--fs-sm)}
+.bar{height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-top:var(--sp-1)}
 .bar>i{display:block;height:100%;background:var(--acc)}
-.err{color:var(--bad);font-size:12px}
-footer{position:fixed;bottom:0;left:0;right:0;background:#070b11;border-top:1px solid var(--line);
-padding:8px 16px;font-size:11px;color:var(--dim);display:flex;gap:10px;justify-content:space-between}
-button.reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 8px;font-size:11px}
-@media (max-width:560px){
-  table,thead,tbody,tr,td,th{display:block;width:auto}
-  thead{display:none}
-  tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#0d141e}
-  td{border:0;padding:3px 0}
-  td.num{text-align:left}
-  td:first-child{font-size:13px}
-  .kv{grid-template-columns:88px 1fr}
+.err{color:var(--up);font-size:var(--fs-xs)}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+th,td{text-align:left;padding:var(--sp-2) 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:500;font-size:var(--fs-xs)}
+.freshbar{margin:0 0 var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-sm);
+border:1px solid var(--line);border-left:3px solid transparent;background:var(--card2);
+font-size:var(--fs-sm);line-height:1.5;min-height:36px}
+.freshbar.ok{border-left-color:var(--ok);color:var(--txt)}
+.freshbar.warn{border-left-color:var(--warn);color:var(--warn)}
+.freshbar.bad{border-left-color:var(--up);color:var(--up)}
+.installbar{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;background:var(--card2);
+border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-3);margin-bottom:var(--sp-3);
+font-size:var(--fs-sm)}
+.installbar button{background:var(--acc);border:0;color:var(--bg);font-weight:600;
+padding:0 var(--sp-4);font-size:var(--fs-sm)}
+.installbar button:disabled{background:var(--line);color:var(--dim);cursor:default}
+footer{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--bg);
+border-top:1px solid var(--line);padding:var(--sp-2) var(--pad-x);
+padding-bottom:calc(var(--safe-b) + var(--sp-2));font-size:var(--fs-xs);color:var(--dim);
+display:flex;gap:var(--sp-2);justify-content:space-between;align-items:center;flex-wrap:wrap}
+footer span{overflow-wrap:anywhere;min-width:0}
+button.reload{background:none;border:1px solid var(--line);color:var(--dim);border-radius:var(--r-sm);
+padding:0 var(--sp-3);font-size:var(--fs-sm)}
+button:active,a:active,[role=button]:active{transform:scale(.98);background:var(--card2);
+transition:transform var(--t-fast),background var(--t-fast)}
+nav button.on:active{background:var(--acc)}
+/* 断点一：手机 ≤430px（小米 14 = 393×873，DPR 3） */
+@media (max-width:430px){
+header{padding-left:var(--sp-3);padding-right:var(--sp-3)}
+nav{padding:var(--sp-2) var(--sp-3) var(--sp-1);gap:var(--sp-1)}
+nav button{padding:0 var(--sp-2);font-size:var(--fs-xs)}
+main{padding:var(--sp-2) var(--sp-3) var(--sp-4)}
+.kv{grid-template-columns:88px 1fr}}
+/* 断点二：大手机 / 小平板 431–767px */
+@media (min-width:431px) and (max-width:767px){
+header{padding-left:var(--sp-5);padding-right:var(--sp-5)}
+nav{padding:var(--sp-2) var(--sp-5) var(--sp-1)}
+main{padding:var(--sp-2) var(--sp-5) var(--sp-5)}
+.card{padding:var(--sp-4)}
+.kv{grid-template-columns:120px 1fr}}
+/* 断点三：平板 768–1024px（2 列） */
+@media (min-width:768px){
+main{max-width:var(--maxw);margin:0 auto}
+main>section{display:grid;gap:var(--sp-4);align-items:start}
+main>section>.card{margin-bottom:0}
+main>section>.dual{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}
+main>section>.installbar{grid-column:1/-1}
+.card{padding:var(--sp-4)}
+.card h2{font-size:var(--fs-xl)}
+.kv{grid-template-columns:130px 1fr}
+.tblwrap{overflow-x:auto}}
+@media (min-width:768px) and (max-width:1024px){
+main>section{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 断点四：桌面 ≥1025px（3 列） */
+@media (min-width:1025px){
+main>section{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{padding:var(--sp-6)}
+.kv{grid-template-columns:140px 1fr}}
+/* 2026-11-06 修复（ui-board 未完成的两处桌面 bug）：
+   ① ≥768 时 header/nav/main 必须共用同一个 1120 容器与同一左右内距，
+      否则标题贴左(x≈20)而卡片居中(x≈120)，视觉错位（1280 视口实测）。
+   ② 首卡（配置偏离）是首要信息，应跨满整行，不该只占 1/3 宽、右侧留白。 */
+@media (min-width:768px){
+  header,nav{max-width:var(--maxw);margin-left:auto;margin-right:auto;
+    padding-left:var(--sp-5);padding-right:var(--sp-5)}
+  main{padding-left:var(--sp-5);padding-right:var(--sp-5)}
+  #s-today>.card:first-child,#s-today>.dual:first-child,
+  #s-ips>.card:first-child,#s-rules>.card:first-child{grid-column:1/-1}
+  /* .dual 内部固定 2 列；当两口径只剩一个（today.live 缺失）时，独卡必须占满，
+     否则右侧空出半个网格 —— 1280 视口实测 ① 配置偏离卡只占 540px/1080px。 */
+  .dual>.card:only-child{grid-column:1/-1}
 }
-.freshbar{position:sticky;top:0;z-index:20;margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
-.freshbar.ok{background:#12301f;border:1px solid #1d4b3a;color:#3ddc97}
-.freshbar.warn{background:#33290f;border:1px solid #4b3d1d;color:#ffb340}
-.freshbar.bad{background:#3a1717;border:1px solid #4b1d1d;color:#ff5c5c}
-.installbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#0f1b2b;border:1px solid #1e3a5f;
-  border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12.5px}
-.installbar button{background:var(--acc);border:0;color:#04101f;font-weight:600;border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer}
-.installbar button:disabled{background:#1e2a3a;color:var(--dim);cursor:default}
-.installbar .dim{font-size:11px}
+/* 手机档表格卡片化（≤767px，不横向滚动） */
+@media (max-width:767px){
+.tblwrap table,.tblwrap tbody,.tblwrap tr,.tblwrap td{display:block;width:auto}
+.tblwrap thead{display:none}
+.tblwrap tr{border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--sp-2);
+margin-bottom:var(--sp-2);background:var(--card2)}
+.tblwrap td{display:flex;justify-content:space-between;gap:var(--sp-2);padding:var(--sp-1) 0;
+min-width:0;overflow-wrap:anywhere}
+.tblwrap td::before{content:attr(data-label);color:var(--dim);font-size:var(--fs-xs);flex:0 0 auto}
+.tblwrap td:first-child{font-size:var(--fs-md);font-weight:600}
+.tblwrap td:first-child::before{content:none}
+.tblwrap td.num{text-align:left}}
+/* 触摸设备专属：命中区更大 + :active 反馈 */
+@media (pointer:coarse){
+button,a,[role=button]{min-height:var(--tap);min-width:var(--tap)}
+button:active,a:active,[role=button]:active{transform:scale(.98);opacity:.9}}
+/* 动效降级 */
+@media (prefers-reduced-motion: reduce){
+*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+transition-duration:.01ms !important;scroll-behavior:auto !important}}
 </style>
 </head>
 <body>
-<div id="freshbar" class="freshbar" hidden></div>
 <header>
-  <h1>治理看板 <small id="ver">—</small></h1>
-  <div class="meta" id="gen">加载中…</div>
+<div id="freshbar" class="freshbar" hidden></div>
+<h1>治理看板 <small id="ver">—</small></h1>
+<div class="meta" id="gen">加载中…</div>
 </header>
 
 <nav id="tabs">
@@ -94,33 +202,31 @@ button.reload{background:none;border:1px solid var(--line);color:var(--dim);bord
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const num = n => (n==null||n==='')?'—':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:2});
-
-function card(title, tag, body){ return `<div class="card"><h2>${esc(title)}<span class="tag">${esc(tag||'')}</span></h2>${body}</div>`; }
+const kv = (k,v,c) => '<div>'+k+'</div><div'+(c?' class="'+c+'"':'')+'>'+v+'</div>';
+function card(title, tag, body, cls){ return `<div class="card${cls?' '+cls:''}"><h2>${esc(title)}<span class="tag">${esc(tag||'')}</span></h2>${body}</div>`; }
 
 // ── IPS 五项 ──
 function renderIPS(d){
   const ips = d.ips || {};
   const rows = (ips.items||[]).map(it=>{
     const cls = it.status==='ok'?'ok':(it.status==='gap'?'bad':'warn');
-    return `<tr><td><b>${esc(it.name)}</b><div class="dim" style="font-size:11px">${esc(it.source||'')}</div></td>
-      <td class="num">${esc(it.value==null?'—':it.value)}</td>
-      <td class="${cls}" style="font-size:11px">${esc(it.note||'')}</td></tr>`;
+    return `<tr><td data-label="项"><b>${esc(it.name)}</b><div class="dim xs">${esc(it.source||'')}</div></td>
+      <td class="num" data-label="值">${esc(it.value==null?'—':it.value)}</td>
+      <td class="${cls} xs" data-label="说明 / 来源">${esc(it.note||'')}</td></tr>`;
   }).join('');
   let h = card('IPS 一页速查', ips.asOf||'', `
-    <table><thead><tr><th>项</th><th style="text-align:right">值</th><th>说明 / 来源</th></tr></thead>
-    <tbody>${rows||'<tr><td colspan=3 class="err">contracts 未就绪</td></tr>'}</tbody></table>
-    <div class="dim" style="font-size:11px;margin-top:8px">${esc(ips.footer||'')}</div>`);
+    <div class="tblwrap"><table><thead><tr><th>项</th><th style="text-align:right">值</th><th>说明 / 来源</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=3 class="err">contracts 未就绪</td></tr>'}</tbody></table></div>
+    <div class="note mt2">${esc(ips.footer||'')}</div>`);
   if (ips.alerts && ips.alerts.length){
     h += card('⚠ 当前失效项', String(ips.alerts.length), ips.alerts.map(a=>`<div class="err">· ${esc(a)}</div>`).join(''));
   }
   $('#s-ips').innerHTML = h;
 }
 
-// ── 口径与规则（2026-11-04 P1-4）：因子登记表 + 新闻事件 + 推演规则 + 待批清单合并 ──
+// ── 口径与规则（2026-11-04 P1-4）──
 function renderRules(d){
-  const h = renderFactor(d) + renderNews(d) + renderChain(d) + renderWatch(d);
-  $('#s-rules').innerHTML = h;
+  $('#s-rules').innerHTML = renderFactor(d) + renderNews(d) + renderChain(d) + renderWatch(d);
 }
 // ── 因子登记 ──
 function renderFactor(d){
@@ -129,28 +235,28 @@ function renderFactor(d){
   const items = f.factors || [];
   const grp = {};
   items.forEach(x=>{ const k=(x.kind==='exposure' ? (x.variant||'exposure') : 'predictive'); grp[k]=(grp[k]||0)+1; });
-  let h = card('因子总数（不可相加）', f.asOf||'', `<div class="kv">
-    <div>暴露·资产类别</div><div><b>${grp['asset-class']||0}</b> 个</div>
-    <div>暴露·因果合并</div><div><b>${grp['causal-chain']||0}</b> 个</div>
-    <div>预测因子</div><div><b>${grp['predictive']||0}</b> 个</div>
-    <div>合计行数</div><div>${items.length} 条 <span class="dim">（8+6+11，前两者同源两套口径，不可相加）</span></div>
-    <div>说明</div><div class="dim">${esc(sum.note||'三类因子含义不同，不可相加')}</div></div>`);
+  let h = card('因子总数（不可相加）', f.asOf||'', '<div class="kv">'
+    + kv('暴露·资产类别','<b>'+(grp['asset-class']||0)+'</b> 个')
+    + kv('暴露·因果合并','<b>'+(grp['causal-chain']||0)+'</b> 个')
+    + kv('预测因子','<b>'+(grp['predictive']||0)+'</b> 个')
+    + kv('合计行数',items.length+' 条 <span class="dim">（8+6+11，前两者同源两套口径，不可相加）</span>')
+    + kv('说明','<span class="dim">'+esc(sum.note||'三类因子含义不同，不可相加')+'</span>')+'</div>');
   const tbody = items.map(x=>{
     // board.json 里 correlations 可能是数组，也可能是 {}（空对象）；非数组一律当空处理。
     const corrRaw = x.correlations;
     const corrList = Array.isArray(corrRaw) ? corrRaw : [];
     const cs = corrList.filter(c=>c && c.r!=null && Math.abs(Number(c.r))>=0.7);
     const cTxt = cs.length ? cs.map(c=>`${esc(c.with)} ${Number(c.r)>0?'+':''}${Number(c.r).toFixed(3)}`).join(' · ') : '<span class="dim">—</span>';
-    return `<tr><td><b>${esc(x.id)}</b><div class="dim" style="font-size:11px">${esc(x.label||'')}</div></td>
-      <td><span class="pill">${esc(x.kind)}</span></td>
-      <td style="font-size:11px">${esc(x.direction||'—')}<div class="dim">${esc(x.updateFrequency||'')}</div></td>
-      <td style="font-size:11px">${cTxt}</td>
-      <td style="font-size:11px" class="dim">${esc(x.invalidation||'—')}</td></tr>`;
+    return `<tr><td data-label="id"><b>${esc(x.id)}</b><div class="dim xs">${esc(x.label||'')}</div></td>
+      <td data-label="类"><span class="pill">${esc(x.kind)}</span></td>
+      <td class="xs" data-label="方向 / 频率">${esc(x.direction||'—')}<div class="dim">${esc(x.updateFrequency||'')}</div></td>
+      <td class="xs" data-label="|r|≥0.7">${cTxt}</td>
+      <td class="xs dim" data-label="失效条件">${esc(x.invalidation||'—')}</td></tr>`;
   }).join('');
-  h += card('因子清单', items.length+' 条', `<table><thead><tr><th>id</th><th>类</th><th>方向/频率</th><th>|r|≥0.7</th><th>失效条件</th></tr></thead>
-    <tbody>${tbody||'<tr><td colspan=5 class="err">contracts 未就绪</td></tr>'}</tbody></table>`);
+  h += card('因子清单', items.length+' 条', `<div class="tblwrap"><table><thead><tr><th>id</th><th>类</th><th>方向/频率</th><th>|r|≥0.7</th><th>失效条件</th></tr></thead>
+    <tbody>${tbody||'<tr><td colspan=5 class="err">contracts 未就绪</td></tr>'}</tbody></table></div>`);
   if (f.unknowns && f.unknowns.length){
-    h += card('未知项', String(f.unknowns.length), f.unknowns.map(u=>`<div class="dim" style="font-size:12px">· ${esc(u)}</div>`).join(''));
+    h += card('未知项', String(f.unknowns.length), f.unknowns.map(u=>`<div class="dim sm">· ${esc(u)}</div>`).join(''));
   }
   return h;
 }
@@ -159,12 +265,12 @@ function renderFactor(d){
 function renderNews(d){
   const n = d.news || {};
   const evs = n.events || [];
-  let h = card('事件映射字典', evs.length+' 类', `<table><thead><tr><th>事件类型</th><th>受影响因子</th><th>资产影响</th><th>可信度</th></tr></thead><tbody>` +
-    (evs.map(e=>`<tr><td><b>${esc(e.eventType)}</b><div class="dim" style="font-size:11px">${esc(e.frequency||'')}</div></td>
-      <td style="font-size:11px">${(e.affectedFactors||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</td>
-      <td style="font-size:11px">${(e.assetImpact||[]).map(a=>`${esc(a.asset)}：${esc(a.direction)}/${esc(a.strength)} <span class="dim">${esc(a.lag||'')}</span>`).join('<br>')}</td>
-      <td><span class="pill ${e.confidence==='A'?'ok':(e.confidence==='C'?'warn':'')}">${esc(e.confidence||'?')}</span></td></tr>`).join('')
-      || '<tr><td colspan=4 class="err">contracts 未就绪</td></tr>') + '</tbody></table>');
+  let h = card('事件映射字典', evs.length+' 类', `<div class="tblwrap"><table><thead><tr><th>事件类型</th><th>受影响因子</th><th>资产影响</th><th>可信度</th></tr></thead><tbody>` +
+    (evs.map(e=>`<tr><td data-label="事件类型"><b>${esc(e.eventType)}</b><div class="dim xs">${esc(e.frequency||'')}</div></td>
+      <td class="xs" data-label="受影响因子">${(e.affectedFactors||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</td>
+      <td class="xs" data-label="资产影响">${(e.assetImpact||[]).map(a=>`${esc(a.asset)}：${esc(a.direction)}/${esc(a.strength)} <span class="dim">${esc(a.lag||'')}</span>`).join('<br>')}</td>
+      <td data-label="可信度"><span class="pill ${e.confidence==='A'?'ok':(e.confidence==='C'?'warn':'')}">${esc(e.confidence||'?')}</span></td></tr>`).join('')
+      || '<tr><td colspan=4 class="err">contracts 未就绪</td></tr>') + '</tbody></table></div>');
   const wl = n.sourceWhitelist || [];
   if (wl.length) h += card('来源白名单', wl.length+' 源', `<div>${wl.map(s=>`<span class="pill ${s.tier==='A'?'ok':''}">${esc(s.name||s.id)}</span>`).join('')}</div>`);
   return h;
@@ -174,16 +280,16 @@ function renderNews(d){
 function renderChain(d){
   const c = d.chain || {};
   const r = c.rules || {};
-  let h = card('链式推演规则', 'chain-rules/v1', `<div class="kv">
-    <div>跳数上限</div><div><b class="${r.maxHops?'ok':'bad'}">${esc(r.maxHops==null?'未设':r.maxHops)}</b> 跳</div>
-    <div>每跳必填</div><div>${(r.requiredPerHop||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>
-    <div>必须回答</div><div class="warn">${esc(r.mustAnswer||'—')}</div>
-    <div>是否触发交易</div><div class="${r.mayTriggerTrade?'bad':'ok'}">${r.mayTriggerTrade?'可以（危险）':'不可以，仅生成假设'}</div>
-    <div>事后校准</div><div>${esc(r.calibration||'—')}</div></div>`);
+  let h = card('链式推演规则', 'chain-rules/v1', '<div class="kv">'
+    + kv('跳数上限','<b class="'+(r.maxHops?'ok':'bad')+'">'+esc(r.maxHops==null?'未设':r.maxHops)+'</b> 跳')
+    + kv('每跳必填',(r.requiredPerHop||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join(''))
+    + kv('必须回答',esc(r.mustAnswer||'—'),'warn')
+    + kv('是否触发交易',r.mayTriggerTrade?'可以（危险）':'不可以，仅生成假设',r.mayTriggerTrade?'bad':'ok')
+    + kv('事后校准',esc(r.calibration||'—'))+'</div>');
   const knownDev = (d.chain && d.chain.knownDeviations) ? d.chain.knownDeviations : (r.knownDeviations||[]);
   if (knownDev && knownDev.length){
     h += card('已知偏离（如实登记）', String(knownDev.length),
-      knownDev.map(x=>`<div class="err" style="font-size:12px">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
+      knownDev.map(x=>`<div class="err sm">· ${esc(x.what||x)}<div class="dim">${esc(x.recordedIn||'')}</div></div>`).join(''));
   }
   if (c.example){
     const e = c.example;
@@ -191,23 +297,21 @@ function renderChain(d){
       <div class="hops"><div class="hop"><b>第 ${esc(hp.hop)} 跳</b> <span class="pill ${(hp.probability>=0.7)?'ok':((hp.probability>=0.4)?'warn':'bad')}">p=${esc(hp.probability)}</span>
       <div>${esc(hp.claim)}</div>
       <div class="bar"><i style="width:${Math.round((hp.probability||0)*100)}%"></i></div>
-      <div class="dim" style="font-size:11px">观测：${esc(hp.observable)}<br>失效：${esc(hp.invalidation)}</div></div></div>`).join('')
+      <div class="dim xs">观测：${esc(hp.observable)}<br>失效：${esc(hp.invalidation)}</div></div></div>`).join('')
       + (function(c){
       if(c && typeof c==='object'){
-        return `<div style="font-size:12px;margin-top:8px">
+        return `<div class="sm mt2">
           <div><b>裁决：</b>${esc(c.verdict||'—')}</div>
-          <div class="dim" style="margin-top:4px">${esc(c.text||'')}</div>
-          ${c.weightEffect?`<div style="margin-top:6px"><b>权重影响：</b><span class="dim">${esc(c.weightEffect)}</span></div>`:''}
-          ${c.whatWouldChangeIt?`<div style="margin-top:6px"><b>什么会推翻它：</b><span class="warn">${esc(c.whatWouldChangeIt)}</span></div>`:''}
+          <div class="dim mt2">${esc(c.text||'')}</div>
+          ${c.weightEffect?`<div class="mt2"><b>权重影响：</b><span class="dim">${esc(c.weightEffect)}</span></div>`:''}
+          ${c.whatWouldChangeIt?`<div class="mt2"><b>什么会推翻它：</b><span class="warn">${esc(c.whatWouldChangeIt)}</span></div>`:''}
         </div>`;
       }
-      return `<div class="dim" style="font-size:11px;margin-top:6px">结论：${esc(c||'')}</div>`;
+      return `<div class="dim xs mt2">结论：${esc(c||'')}</div>`;
     })(e.conclusion));
   }
   return h;
 }
-
-
 
 // ── 移动端三件：时效横幅 / 国家队 / 通知（2026-11-03）──
 function updateFreshnessBanner(d){
@@ -229,19 +333,19 @@ function renderNationalTeam(d){
   const n = d.nationalTeam; if(!n) return '';
   if(!n.ok){
     return card('国家队动向','未接入', '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
-      + '<div class="dim" style="font-size:11px">源：166.88.14.220:38657（朋友提供）。失败时明确报错，不显示旧数。</div>');
+      + '<div class="note mt2">源：166.88.14.220:38657（朋友提供）。失败时明确报错，不显示旧数。</div>');
   }
   const s = n.summary||{}; const items = n.items||[];
   let h = card('国家队动向','F2-补 宽基净申购', '<div class="kv">'
-    + '<div>采集正常</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
-    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
-    + '<div>共监控</div><div><b>'+(s.total||0)+'</b> 只 <span class="dim">增 '+(s.up||0)+' / 减 '+(s.down||0)+'</span></div></div>'
-    + '<table style="margin-top:8px"><thead><tr><th>ETF</th><th style="text-align:right">份额变化</th><th style="text-align:right">%</th></tr></thead><tbody>'
-    + items.slice(0,6).map(x=>'<tr><td>'+esc(x.name||x.code)+'<div class="dim" style="font-size:10px">'+esc(x.code)+'</div></td>'
-        + '<td class="num '+(x.deltaShares>0?'ok':'bad')+'">'+(x.deltaShares>0?'+':'')+(x.deltaWan!=null?x.deltaWan:'?')+' 万份</td>'
-        + '<td class="num">'+(x.deltaPct>0?'+':'')+x.deltaPct+'%</td></tr>').join('')
-    + '</tbody></table>'
-    + '<div class="dim" style="font-size:11px;margin-top:6px">'+esc(n.discipline||'')+'</div>');
+    + kv('采集正常',esc(n.lastSuccess||'—'),'ok')
+    + kv('区间',esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—'))
+    + kv('共监控','<b>'+(s.total||0)+'</b> 只 <span class="dim">增 '+(s.up||0)+' / 减 '+(s.down||0)+'</span>')+'</div>'
+    + '<div class="tblwrap mt2"><table><thead><tr><th>ETF</th><th style="text-align:right">份额变化</th><th style="text-align:right">%</th></tr></thead><tbody>'
+    + items.slice(0,6).map(x=>'<tr><td data-label="ETF">'+esc(x.name||x.code)+'<div class="dim xs">'+esc(x.code)+'</div></td>'
+        + '<td class="num '+(x.deltaShares>0?'ok':'bad')+'" data-label="份额变化">'+(x.deltaShares>0?'+':'')+(x.deltaWan!=null?x.deltaWan:'?')+' 万份</td>'
+        + '<td class="num" data-label="%">'+(x.deltaPct>0?'+':'')+x.deltaPct+'%</td></tr>').join('')
+    + '</tbody></table></div>'
+    + '<div class="note mt2">'+esc(n.discipline||'')+'</div>');
   return h;
 }
 
@@ -256,8 +360,8 @@ function renderNationalTeamPage(d){
   if(!n.ok){
     el.innerHTML = card('国家队动向','采集失败',
         '<div class="err">拉取失败：'+esc(n.error||'未知')+'</div>'
-      + '<div class="dim" style="font-size:12px;margin-top:8px">失败时<strong>不显示旧数</strong>，避免把过期份额变化当成今天的信号。</div>'
-      + '<div class="dim" style="font-size:11px;margin-top:6px">源：166.88.14.220:38657（朋友提供）。</div>');
+      + '<div class="dim sm mt2">失败时<strong>不显示旧数</strong>，避免把过期份额变化当成今天的信号。</div>'
+      + '<div class="note mt2">源：166.88.14.220:38657（朋友提供）。</div>');
     return;
   }
   const s = n.summary||{};
@@ -270,31 +374,31 @@ function renderNationalTeamPage(d){
     const sign = up ? '+' : '';
     const wan = (x.deltaWan!=null) ? Number(x.deltaWan).toLocaleString('zh-CN',{maximumFractionDigits:0}) : (x.deltaShares!=null ? (Number(x.deltaShares)/10000).toFixed(0) : null);
     const pctTxt = (x.deltaPct!=null) ? ((Number(x.deltaPct)>0?'+':'')+Number(x.deltaPct).toFixed(2)+'%') : '—';
-    return '<tr><td><b>'+esc(x.name||x.code)+'</b></td>'
-      + '<td class="dim">'+esc(x.code||'')+'</td>'
-      + '<td class="num '+cls+'">'+(wan!=null?sign+wan:'—')+'</td>'
-      + '<td class="num '+cls+'">'+pctTxt+'</td></tr>';
+    return '<tr><td data-label="ETF名"><b>'+esc(x.name||x.code)+'</b></td>'
+      + '<td class="dim" data-label="代码">'+esc(x.code||'')+'</td>'
+      + '<td class="num '+cls+'" data-label="份额变化(万份)">'+(wan!=null?sign+wan:'—')+'</td>'
+      + '<td class="num '+cls+'" data-label="变化%">'+pctTxt+'</td></tr>';
   }).join('');
   // 明细行数与 summary.total 不一致时如实说明，不假装列全了。
   const gapNote = (items.length !== totalSummary)
-    ? '<div class="warn" style="font-size:11.5px;margin-top:8px">⚠ board.json 的 nationalTeam.items 本次只有 <b>'+items.length+'</b> 行明细，'
+    ? '<div class="warn sm mt2">⚠ board.json 的 nationalTeam.items 本次只有 <b>'+items.length+'</b> 行明细，'
       + '而 summary.total 记为 <b>'+totalSummary+'</b> 只（增 '+esc(s.up||0)+' / 减 '+esc(s.down||0)+'）。'
       + '汇总数字来自采集端口径，明细只渲染 board.json 实际下发的行，不补齐、不推测缺失项。</div>'
     : '';
   let h = card('国家队动向 · 全量', 'F2-补 宽基净申购',
       '<div class="kv">'
-    + '<div>采集状态</div><div class="ok">'+esc(n.lastSuccess||'—')+'</div>'
-    + '<div>区间</div><div>'+esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—')+'</div>'
-    + '<div>汇总</div><div>共 '+esc(totalSummary)+' 只　'
+    + kv('采集状态',esc(n.lastSuccess||'—'),'ok')
+    + kv('区间',esc(n.datePrev||'—')+' → '+esc(n.dateCurrent||'—'))
+    + kv('汇总','共 '+esc(totalSummary)+' 只　'
       + '<span class="ok">增 '+esc(s.up||0)+'</span> / '
       + '<span class="bad">减 '+esc(s.down||0)+'</span>'
-      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':'')+'</div></div>' + gapNote);
+      + (s.flat!=null?' / <span class="dim">平 '+esc(s.flat)+'</span>':''))+'</div>' + gapNote);
   h += card('ETF 明细', items.length+' 只',
-      '<table><thead><tr><th>ETF名</th><th>代码</th><th style="text-align:right">份额变化(万份)</th><th style="text-align:right">变化%</th></tr></thead><tbody>'
+      '<div class="tblwrap"><table><thead><tr><th>ETF名</th><th>代码</th><th style="text-align:right">份额变化(万份)</th><th style="text-align:right">变化%</th></tr></thead><tbody>'
     + (rows || '<tr><td colspan="4" class="err">无明细</td></tr>')
-    + '</tbody></table>');
-  h += card('口径纪律（原文）', '必读', '<div style="font-size:12.5px;white-space:pre-wrap">'+esc(n.discipline||'（board.json 未提供 discipline 字段）')+'</div>'
-    + '<div class="dim" style="font-size:11px;margin-top:8px">原文直出，不做二次解读。</div>');
+    + '</tbody></table></div>');
+  h += card('口径纪律（原文）', '必读', '<div class="md pre">'+esc(n.discipline||'（board.json 未提供 discipline 字段）')+'</div>'
+    + '<div class="note mt2">原文直出，不做二次解读。</div>');
   el.innerHTML = h;
 }
 
@@ -303,13 +407,13 @@ function renderNotifications(d){
   const cls = {urgent:'bad', watch:'warn', info:'ok'};
   const cn = {urgent:'紧急', watch:'观察', info:'信息'};
   let h = card('通知', (q.count||0)+' 条', '<div class="kv">'
-    + '<div>分级</div><div><span class="pill bad">紧急 '+(lv.urgent||0)+'</span> <span class="pill warn">观察 '+(lv.watch||0)+'</span> <span class="pill">信息 '+(lv.info||0)+'</span></div>'
-    + '<div>策略</div><div class="dim">'+esc(q.policy||'')+'</div></div>'
-    + (items.length? items.map(x=>'<div style="border-left:3px solid var(--line);padding-left:10px;margin-top:8px">'
+    + kv('分级','<span class="pill bad">紧急 '+(lv.urgent||0)+'</span> <span class="pill warn">观察 '+(lv.watch||0)+'</span> <span class="pill">信息 '+(lv.info||0)+'</span>')
+    + kv('策略','<span class="dim">'+esc(q.policy||'')+'</span>')+'</div>'
+    + (items.length? items.map(x=>'<div class="quote mt2">'
         + '<div><span class="pill '+(cls[x.level]||'')+'">'+esc(cn[x.level]||x.level)+'</span> <b>'+esc(x.title)+'</b></div>'
-        + '<div class="dim" style="font-size:11px">'+esc(x.body||'')+'</div></div>').join('') : '<div class="dim">当前无通知</div>')
-    + '<button class="reload" style="margin-top:10px" onclick="askNotify()">开启系统通知</button>'
-    + '<div class="dim" style="font-size:11px;margin-top:6px" id="notifyState"></div>');
+        + '<div class="note">'+esc(x.body||'')+'</div></div>').join('') : '<div class="dim">当前无通知</div>')
+    + '<button class="reload mt2" onclick="askNotify()">开启系统通知</button>'
+    + '<div class="note mt2" id="notifyState"></div>');
   return h;
 }
 
@@ -335,38 +439,42 @@ function renderToday(d){
   const p = td.position, rb = td.rebalance || {};
   const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
   let h = '';
+  // 顶部双口径区（F-22）：信号卡口径在前、台账口径在后；两口径数值不同是预期，互不覆盖。
+  let dual = '';
   if (td.live) {
     const lv = td.live;
-    h += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
-      + '<div>风险仓位</div><div><b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span></div>'
-      + '<div>总资产</div><div>'+(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元</div>'
-      + '<div>需减（到目标）</div><div><b>'+(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0}))+'</b> 元</div>'
-      + '<div>动作</div><div><b>'+esc(lv.action||'—')+'</b> <span class="dim">信心 '+esc(lv.confidence||'—')+'</span></div>'
-      + '<div>生成时间</div><div class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</div></div>'
-      + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(lv.note||'')+'</div>');
+    dual += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
+      + kv('风险仓位','<b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span>')
+      + kv('总资产',(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元')
+      + kv('需减（到目标）','<b>'+(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0}))+'</b> 元')
+      + kv('动作','<b>'+esc(lv.action||'—')+'</b> <span class="dim">信心 '+esc(lv.confidence||'—')+'</span>')
+      + kv('生成时间','<span class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</span>')+'</div>'
+      + '<div class="note mt2">'+esc(lv.note||'')+'</div>', 'cal-sig');
   }
-  h += card('① 配置偏离', td.date||'', '<div class="kv">'
-    + '<div>当前风险仓位</div><div><b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span></div>'
-    + '<div>硬顶</div><div>'+pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span></div>'
-    + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
-    + '<div>总财富</div><div>'+(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')+'</div>'
-+ '<div>需净卖出</div><div>'+(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>'))+'</div>'
-    + '<div>数据时点</div><div class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</div></div>'
-    + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
+  dual += card('① 配置偏离', td.date||'', '<div class="kv">'
+    + kv('当前风险仓位','<b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span>')
+    + kv('硬顶',pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span>')
+    + kv('偏离','<span class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</span>')
+    + kv('总财富',(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元'))
+    + kv('需净卖出',(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>')))
+    + kv('数据时点','<span class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</span>')+'</div>'
+    + '<div class="note mt2">'+esc(p.note||'')+'</div>', 'cal-led');
+  // 两口径齐备时才用 .dual 包裹；缺 today.live 时不留空壳（否则桌面网格会空出整列）
+  h += dual ? '<div class="dual">'+dual+'</div>' : '';
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'
-    + '<div>运行带</div><div><b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span></div>'
-    + '<div>是否在带内</div><div class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</div>'
-    + '<div>动作</div><div><b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b></div></div>');
+    + kv('运行带','<b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span>')
+    + kv('是否在带内','<span class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</span>')
+    + kv('动作','<b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b>')+'</div>');
   const pend = td.pending || [];
   h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length
-    ? ('<table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'
-       + pend.map(function(x){ return '<tr><td><b>'+esc((x.what||'').replace(/\*/g,''))+'</b></td><td class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</td></tr>'; }).join('')
-       + '</tbody></table>')
+    ? ('<div class="tblwrap"><table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'
+       + pend.map(function(x){ return '<tr><td data-label="事项"><b>'+esc((x.what||'').replace(/\*/g,''))+'</b></td><td class="dim xs" data-label="说明">'+esc((x.why||'').replace(/\*/g,''))+'</td></tr>'; }).join('')
+       + '</tbody></table></div>')
     : '<div class="dim">无待确认事项</div>');
   const fr = td.freshness || [];
-  h += card('④ 数据新鲜度','每格可判定', '<table><thead><tr><th>数据</th><th>时点</th><th>状态</th></tr></thead><tbody>'
-    + fr.map(function(x){ return '<tr><td>'+esc(x.item)+'</td><td class="dim">'+esc(x.asOf||'—')+(x.ageDays!=null?' · '+x.ageDays+'天':'')+'</td><td>'+st(!x.stale)+'</td></tr>'; }).join('')
-    + '</tbody></table>');
+  h += card('④ 数据新鲜度','每格可判定', '<div class="tblwrap"><table><thead><tr><th>数据</th><th>时点</th><th>状态</th></tr></thead><tbody>'
+    + fr.map(function(x){ return '<tr><td data-label="数据">'+esc(x.item)+'</td><td class="dim" data-label="时点">'+esc(x.asOf||'—')+(x.ageDays!=null?' · '+x.ageDays+'天':'')+'</td><td data-label="状态">'+st(!x.stale)+'</td></tr>'; }).join('')
+    + '</tbody></table></div>');
   h += renderNationalTeam(d) + renderNotifications(d);
   $('#s-today').innerHTML = h;
 }
@@ -376,12 +484,12 @@ function renderWatch(d){
   const td = d.today || {};
   const pend = td.pending || [];
   let h = card('待你决定', (td.pendingCnt||0)+' 条', pend.length
-    ? pend.map(function(x,i){ return '<div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">'
+    ? pend.map(function(x,i){ return '<div class="quote">'
         + '<div><b>'+(i+1)+'. '+esc((x.what||'').replace(/\*/g,''))+'</b></div>'
-        + '<div class="dim" style="font-size:11px">'+esc((x.why||'').replace(/\*/g,''))+'</div>'
-        + '<div class="dim" style="font-size:11px">归属：'+esc(x.owner||'user')+'</div></div>'; }).join('')
+        + '<div class="note">'+esc((x.why||'').replace(/\*/g,''))+'</div>'
+        + '<div class="note">归属：'+esc(x.owner||'user')+'</div></div>'; }).join('')
     : '<div class="dim">无</div>');
-  h += card('确认后怎么记', 'cli', '<div class="dim" style="font-size:12px">决定的方式：手机上直接按「确认 / 否决 / 备注」（已上线 /api/confirm）；PC 上用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」。</div>');
+  h += card('确认后怎么记', 'cli', '<div class="dim sm">决定的方式：手机上直接按「确认 / 否决 / 备注」（已上线 /api/confirm）；PC 上用 tools\\log-decision.ps1 记一行，就会出现在「审计留痕」。</div>');
   return h;
 }
 
@@ -392,18 +500,18 @@ function renderSettings(d){
   const lastAt = meta.lastSuccessAt || cacheMetaTime();
   let h = '<div class="installbar" id="installPrompt"></div>';
   h += card('数据源', '只读契约', '<div class="kv">'
-    + '<div>当前数据源</div><div><b>'+esc(srcNow)+'</b>'
-      + (meta.fromCache?' <span class="pill warn">离线/缓存</span>':' <span class="pill ok">在线</span>')+'</div>'
-    + '<div>降级顺序</div><div>① raw.githubusercontent.com（S4 每 30 分钟覆盖）→ ② ./data/board.json 自托管兜底 → ③ localStorage 上次成功数据</div>'
-    + '<div>上次成功时间</div><div>'+esc(lastAt||'无（从未成功加载）')+'</div>'
-    + '<div>看板数据</div><div>board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）</div>'
-    + '<div>口径根</div><div>investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）</div>'
-    + '<div>刷新</div><div>PC 侧重跑 export-board.ps1 后推送；本页每次打开取最新（带 cache-bust）</div>'
-    + '<div>离线</div><div class="dim">Service Worker 缓存 board.json（stale-while-revalidate）+ localStorage 兜底；断网时显示上次数据并标注「离线模式 · 数据时点」</div></div>')
+    + kv('当前数据源','<b>'+esc(srcNow)+'</b>'
+      + (meta.fromCache?' <span class="pill warn">离线/缓存</span>':' <span class="pill ok">在线</span>'))
+    + kv('降级顺序','① raw.githubusercontent.com（S4 每 30 分钟覆盖）→ ② ./data/board.json 自托管兜底 → ③ localStorage 上次成功数据')
+    + kv('上次成功时间',esc(lastAt||'无（从未成功加载）'))
+    + kv('看板数据','board.json（由 tools\\export-board.ps1 聚合 contracts/*.json）')
+    + kv('口径根','investment-engine 源码 → contracts/engine-policy.json（带源码 sha256）')
+    + kv('刷新','PC 侧重跑 export-board.ps1 后推送；本页每次打开取最新（带 cache-bust）')
+    + kv('离线','<span class="dim">Service Worker 缓存 board.json（stale-while-revalidate）+ localStorage 兜底；断网时显示上次数据并标注「离线模式 · 数据时点」</span>')+'</div>')
   + card('脱敏规则', '硬约束', '<div class="kv">'
-    + '<div>不进公开页</div><div>持仓名称、成本价、amountCny（决策金额）</div>'
-    + '<div>原因</div><div>2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史</div>'
-    + '<div>金额在哪</div><div>只在本机 _audit\\decisions\\decisions.jsonl</div></div>')
+    + kv('不进公开页','持仓名称、成本价、amountCny（决策金额）')
+    + kv('原因','2026-11-02 曾因公开 state.json 泄露 12 条真实持仓名 + 9 条成本，已脱敏并重写历史')
+    + kv('金额在哪','只在本机 _audit\\decisions\\decisions.jsonl')+'</div>')
   + card('当前限制（不粉饰）', '3 条', '<div class="err">① 手机端已可直接按「确认」（/api/confirm 已上线，锁卡里确认按钮），留痕见审计 tab</div>'
     + '<div class="err">② 持仓快照过期，简报里仓位是推算值不是实时真值</div>'
     + '<div class="err">③ 系统推送通知依赖 Notification API，部分浏览器/环境不支持</div>');
@@ -418,29 +526,27 @@ function renderAudit(d){
   const a = d.decisions || {};
   const items = (a.items||[]).slice().reverse();
   const by = a.byAction || {};
-  let h = card('人工确认留痕', (a.count||0)+' 条', `<div class="kv">
-    <div>总计</div><div><b>${a.count||0}</b> 条 <span class="dim">（append-only，不改旧行）</span></div>
-    <div>已确认</div><div>${by.confirm||0} 条</div>
-    <div>已否决</div><div>${by.reject||0} 条</div>
-    <div>已推迟</div><div>${by.defer||0} 条</div>
-    <div>仅留痕</div><div>${by.note||0} 条</div>
-    <div>脱敏</div><div class="dim">金额 amountCny 不进入本页，只留本机账本</div></div>`);
+  let h = card('人工确认留痕', (a.count||0)+' 条', '<div class="kv">'
+    + kv('总计','<b>'+(a.count||0)+'</b> 条 <span class="dim">（append-only，不改旧行）</span>')
+    + kv('已确认',(by.confirm||0)+' 条')
+    + kv('已否决',(by.reject||0)+' 条')
+    + kv('已推迟',(by.defer||0)+' 条')
+    + kv('仅留痕',(by.note||0)+' 条')
+    + kv('脱敏','<span class="dim">金额 amountCny 不进入本页，只留本机账本</span>')+'</div>');
   const rows = items.map(x=>`
-    <div style="border-left:2px solid var(--line);padding-left:12px;margin-bottom:10px">
+    <div class="quote">
       <div><span class="pill ${ACT_CLS[x.action]||''}">${esc(ACT_CN[x.action]||x.action)}</span> <b>${esc(x.subject)}</b></div>
-      <div class="dim" style="font-size:11px">${esc((x.decidedAt||'').slice(0,16).replace('T',' '))} · ${esc(x.actor||'')} · ${esc(x.source||'')}${x.dataAsOf?' · 依据数据 '+esc(x.dataAsOf):''}</div>
-      ${x.reason?'<div style="font-size:12px;margin-top:3px">'+esc(x.reason)+'</div>':''}
-      ${x.supersedes?'<div class="dim" style="font-size:11px">取代 '+esc(x.supersedes)+'</div>':''}
+      <div class="note">${esc((x.decidedAt||'').slice(0,16).replace('T',' '))} · ${esc(x.actor||'')} · ${esc(x.source||'')}${x.dataAsOf?' · 依据数据 '+esc(x.dataAsOf):''}</div>
+      ${x.reason?'<div class="sm mt2">'+esc(x.reason)+'</div>':''}
+      ${x.supersedes?'<div class="note mt2">取代 '+esc(x.supersedes)+'</div>':''}
     </div>`).join('');
   h += card('时间线（新→旧）', (a.count||0)+' 条', rows || '<div class="dim">账本为空。用 tools\\log-decision.ps1 记第一条。</div>');
-  h += card('怎么记', 'cli', '<div style="font-size:12px" class="dim">powershell -File tools\\log-decision.ps1 -Action confirm -Subject &quot;减仓执行单&quot; -Reason &quot;已提交&quot;<br>Action 四选一：<b>confirm</b> / <b>reject</b> / <b>defer</b> / <b>note</b>；同 id 重复写会被拒（幂等）。</div>');
+  h += card('怎么记', 'cli', '<div class="dim sm">powershell -File tools\\log-decision.ps1 -Action confirm -Subject &quot;减仓执行单&quot; -Reason &quot;已提交&quot;<br>Action 四选一：<b>confirm</b> / <b>reject</b> / <b>defer</b> / <b>note</b>；同 id 重复写会被拒（幂等）。</div>');
   $('#s-audit').innerHTML = h;
 }
 // ── 加载 ──
-// 两源降级（2026-11-04 P0-3 顺序反转：raw 优先，自托管兜底）
-//   1) raw.githubusercontent.com —— S4 每 30 分钟覆盖（最多 minutes CDN 时差）
-//   2) ./data/board.json 自托管兜底 —— 2026-11-04 起 S4 不往 finhub(Pages) 仓推 board.json，会变旧
-//   3) localStorage 上次成功数据（离线可读）
+// 两源降级（2026-11-04 P0-3 顺序反转：raw 优先，自托管兜底）：
+//   ① raw.githubusercontent.com（S4 每 30 分钟覆盖）② ./data/board.json 自托管兜底 ③ localStorage 缓存
 // 全部失败 → 显示错误 + 「上次成功时间」，绝不显示成 0 或空成功。
 const BOARD_SOURCE_RAW   = 'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json';
 const BOARD_SOURCE_SELF  = './data/board.json';
@@ -480,8 +586,7 @@ async function fetchOne(url){
   return j;
 }
 
-// 主取数：按顺序尝试 前两源；失败再落到 localStorage 缓存。
-// 返回 { d, src, fromCache, lastSuccessAt, errors }
+// 主取数：按顺序尝试前两源；失败再落到 localStorage 缓存。返回 { d, src, fromCache, lastSuccessAt, errors }
 async function fetchBoard(){
   const errors = [];
   const candidates = [BOARD_SOURCE_RAW, BOARD_SOURCE_SELF];
@@ -513,9 +618,9 @@ async function load(){
         ? ('上次成功时间：' + got.lastSuccessAt)
         : '上次成功时间：无（此前从未成功加载过）';
       $('#gen').innerHTML = '<span class="err">board.json 读取失败：全部数据源不可用</span>'
-        + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>'
-        + '<div class="dim" style="font-size:11px">失败明细：' + esc((LAST_LOAD_ERRORS.join(' | ')) || '未知') + '</div>'
-        + '<div class="dim" style="font-size:11px">点右下角刷新重试。</div>';
+        + '<div class="note mt2">' + esc(lastTxt) + '</div>'
+        + '<div class="note">失败明细：' + esc((LAST_LOAD_ERRORS.join(' | ')) || '未知') + '</div>'
+        + '<div class="note">点右下角刷新重试。</div>';
       $('#src').textContent = 'board.json · 读取失败';
       return;
     }
@@ -540,7 +645,7 @@ async function load(){
   }catch(e){
     const lastTxt = cacheMetaTime() ? ('上次成功时间：' + cacheMetaTime()) : '上次成功时间：无（此前从未成功加载过）';
     $('#gen').innerHTML = '<span class="err">board.json 读取失败：' + esc(e.message) + '</span>'
-      + '<div class="dim" style="font-size:11px;margin-top:4px">' + esc(lastTxt) + '</div>';
+      + '<div class="note mt2">' + esc(lastTxt) + '</div>';
   }
 }
 
@@ -559,7 +664,7 @@ window.addEventListener('hashchange', ()=>showTab(location.hash.slice(1)));
 load().then(()=>showTab(location.hash.slice(1)));
 
 // ── Service Worker：board.json 离线只读缓存（stale-while-revalidate）──
-// 用 Blob URL 内联注册，避免多出一个 sw.js 文件；file:// 或受限环境失败时静默降级（localStorage 兜底）。
+// 用 Blob URL 内联注册（免多出一个 sw.js）；file:// 或受限环境失败时静默降级（localStorage 兜底）。
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol !== 'https:') return;          // file:// 下 SW 不可用，静默跳过

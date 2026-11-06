@@ -163,13 +163,13 @@ td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 #t2bar .t2toggle{min-height:32px;padding:4px 6px}
 .ab{min-height:36px;padding:6px 12px;border-radius:8px}
 .xbtn{min-height:36px}
-#modebar{display:flex;gap:6px;margin:0 0 10px;padding:0 2px}
+#modebar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;padding:0 2px}
 #modebar button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
   padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer}
 #modebar button.on{background:var(--acc);border-color:var(--acc);color:#04101f}
 #t2bar{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px}
 #golink,#t2bar .golink{color:var(--acc);font-size:12px;text-decoration:none;padding:4px 8px}
-.t2toggle{color:var(--dim);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.t2toggle{color:var(--dim);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
 .t2toggle input{accent-color:var(--acc)}
 /* ② 一级屏收纳：tier2 卡默认收起，勾选「显示更多」或跳 board.html */
 #app .card.tier2, #app .xcard.tier2{display:none}

@@ -13,8 +13,8 @@ class FinHubUiV6Smoke(unittest.TestCase):
         cls.css = (ROOT / "ui-v6.css").read_text(encoding="utf-8")
 
     def test_both_entry_points_load_shared_theme(self):
-        self.assertIn('href="ui-v6.css?v=1"', self.index)
-        self.assertIn('href="ui-v6.css?v=1"', self.board)
+        self.assertIn('href="ui-v6.css?v=2"', self.index)
+        self.assertIn('href="ui-v6.css?v=2"', self.board)
         self.assertIn('<body class="fh-v6">', self.index)
         self.assertIn('<body class="fh-v6">', self.board)
 
@@ -45,6 +45,16 @@ class FinHubUiV6Smoke(unittest.TestCase):
         self.assertIn("ev.slice(0,2)", self.index)
         self.assertIn(".actionbar-structured", self.css)
         self.assertIn("grid-template-columns:minmax(0,1fr)", self.css)
+
+    def test_unverified_or_stale_decisions_fail_closed(self):
+        for marker in ("decisionIntegrityFor", "gate.status!=='PASS'",
+                       "gate.canRecommend!==true", "gate.checkedAt", "24*60*60*1000", "age>1.5",
+                       "BLOCK · 不可决策", "当前不提供 HOLD / ADD / TRIM / EXIT 建议",
+                       "完整性阻断"):
+            self.assertIn(marker, self.index)
+        for marker in ("decisionIntegrityFor", "age>1.5", "BLOCK · 不可决策",
+                       "完整性阻断"):
+            self.assertIn(marker, self.board)
 
     def test_theme_is_scoped_and_does_not_hide_data_by_default(self):
         self.assertIn('body.fh-v6', self.css)

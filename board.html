@@ -434,10 +434,35 @@ function askNotify(){
 // ── 今日简报（阶段 1 核心）──
 function st(v){ return v?'<span class="ok">正常</span>':'<span class="bad">过期</span>'; }
 function pct(v){ return v==null?'—':(Number(v).toFixed(2)+'%'); }
+function decisionIntegrityFor(board, position){
+  var gate=(board&&(board.decisionIntegrity||(board.today&&board.today.decisionIntegrity)))||null;
+  var reasons=[];
+  if(!gate || gate.status!=='PASS' || gate.canRecommend!==true)
+    reasons.push(gate?(gate.message||'上游完整性闸门未通过'):'上游未提供决策完整性 PASS');
+  var gateStamp=gate&&gate.checkedAt?Date.parse(gate.checkedAt):NaN;
+  if(!Number.isFinite(gateStamp)) reasons.push('完整性审计时点缺失');
+  else {
+    var gateAgeMs=Date.now()-gateStamp;
+    if(gateAgeMs>24*60*60*1000) reasons.push('完整性审计结果超过24小时');
+    if(gateAgeMs< -5*60*1000) reasons.push('完整性审计时点位于未来');
+  }
+  var age=position&&position.dataAgeDays!=null?Number(position.dataAgeDays):NaN;
+  if(!Number.isFinite(age)&&position&&position.dataAsOf){
+    var stamp=Date.parse(position.dataAsOf);
+    if(Number.isFinite(stamp)) age=(Date.now()-stamp)/86400000;
+  }
+  if(!Number.isFinite(age)) reasons.push('持仓快照年龄缺失');
+  else if(age>1.5) reasons.push('持仓快照超过36小时（'+age.toFixed(2)+'天）');
+  if(position&&position.stale===true) reasons.push('上游已标记持仓快照过期');
+  return {blocked:reasons.length>0,reasons:reasons};
+}
+
 function renderToday(d){
   const td = d.today || {};
   if (!td.position) { $('#s-today').innerHTML = card('今日简报','', '<div class="err">today 段缺失</div>'); return; }
   const p = td.position, rb = td.rebalance || {};
+  const integrity = decisionIntegrityFor(d,p);
+  const safeAction = integrity.blocked ? 'BLOCK · 不可决策' : (rb.action||'—');
   const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
   let h = '';
   // 顶部双口径区（F-22）：信号卡口径在前、台账口径在后；两口径数值不同是预期，互不覆盖。
@@ -447,8 +472,8 @@ function renderToday(d){
     dual += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
       + kv('风险仓位','<b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span>')
       + kv('总资产',(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元')
-      + kv('需减（到目标）','<b>'+(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0}))+'</b> 元')
-      + kv('动作','<b>'+esc(lv.action||'—')+'</b> <span class="dim">信心 '+esc(lv.confidence||'—')+'</span>')
+      + kv('需减（到目标）','<b>'+(integrity.blocked?'—（完整性阻断）':(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0})+' 元'))+'</b>')
+      + kv('动作','<b class="'+(integrity.blocked?'bad':'')+'">'+esc(integrity.blocked?'BLOCK · 不可决策':(lv.action||'—'))+'</b> <span class="dim">信心 '+esc(integrity.blocked?'已禁用':(lv.confidence||'—'))+'</span>')
       + kv('生成时间','<span class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</span>')+'</div>'
       + '<div class="note mt2">'+esc(lv.note||'')+'</div>', 'cal-sig');
   }
@@ -458,14 +483,14 @@ function renderToday(d){
     + kv('偏离','<span class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</span>')
     + kv('总财富',(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元'))
     + kv('需净卖出',(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>')))
-    + kv('数据时点','<span class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</span>')+'</div>'
+    + kv('数据时点','<span class="'+(integrity.blocked?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(integrity.blocked?' <b>⚠ 决策阻断：'+esc(integrity.reasons.join('；'))+'</b>':'')+'</span>')+'</div>'
     + '<div class="note mt2">'+esc(p.note||'')+'</div>', 'cal-led');
   // 两口径齐备时才用 .dual 包裹；缺 today.live 时不留空壳（否则桌面网格会空出整列）
   h += dual ? '<div class="dual">'+dual+'</div>' : '';
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'
     + kv('运行带','<b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span>')
     + kv('是否在带内','<span class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</span>')
-    + kv('动作','<b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b>')+'</div>');
+    + kv('动作','<b class="'+(integrity.blocked?'bad':(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))) +'">'+esc(safeAction)+'</b>')+'</div>');
   const pend = td.pending || [];
   h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length
     ? ('<div class="tblwrap"><table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'

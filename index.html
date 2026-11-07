@@ -821,9 +821,10 @@ function render(s){
        只显示**不含金额**的关键决策信息：动作 / 敞口% / 硬顶 / 目标区间 / 数据时点。
        金额与引擎清单属个人层，锁定时不显示、不估算、不用旧值冒充。 */
     const bt=s.__boardToday, pos=bt.position||{}, rb=bt.rebalance||{};
-    const pact=rb.action||'';
-    const pcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[pact]||'wait';
-    const pcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[pact]||pact||'—';
+    const integrity=decisionIntegrityFor(boardData(),pos);
+    const pact=integrity.blocked?'BLOCK':(rb.action||'');
+    const pcls=integrity.blocked?'trim':({ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[pact]||'wait');
+    const pcn=integrity.blocked?'不可决策':({ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[pact]||pact||'—');
     const band=(rb.bandLowPct!=null&&rb.bandHighPct!=null)?(rb.bandLowPct+'–'+rb.bandHighPct+'%'):'—';
     const hardTop=pos.hardMaxPct!=null?pos.hardMaxPct+'%':'—';
     h+=`<div class="card">
@@ -832,7 +833,7 @@ function render(s){
         <div class="badge ${pcls}">${pcn}</div>
         <div class="meta">
           <div class="stage">仓位敞口 <span class="pill">${pos.currentPct!=null?pos.currentPct+'%':'—'} · 硬顶 ${hardTop} · 区间 ${band}</span></div>
-          <div class="adv">${rb.inBand===true?'在目标区间内':(rb.action?'超出目标区间，需按动作调整':'—')}${pos.stale?' · <span style="color:var(--warn)">快照偏旧</span>':''}</div>
+          <div class="adv">${integrity.blocked?'<span class="bad">⛔ 决策已阻断：'+escHtml(integrity.reasons.join('；'))+'。不得把旧动作当作建议。</span>':(rb.inBand===true?'在目标区间内':(rb.action?'超出目标区间，需按动作调整':'—'))}${pos.stale?' · <span style="color:var(--warn)">快照偏旧</span>':''}</div>
         </div>
       </div>
       <div class="bars">
@@ -1391,6 +1392,26 @@ function lnCheck(){
 function boardData(){ return window.__extrasData || window.__boardData || null; }
 function stateData(){ return window.__stateData || null; }
 
+/* Fail closed: a visual freshness badge is not proof that a decision is safe.
+   The publisher must supply an explicit PASS from the upstream integrity gate;
+   the public position snapshot must also be no older than 36 hours. */
+function decisionIntegrityFor(board, position){
+  var gate=(board&&(board.decisionIntegrity||(board.today&&board.today.decisionIntegrity)))||null;
+  var reasons=[];
+  if(!gate || gate.status!=='PASS' || gate.canRecommend!==true){
+    reasons.push(gate ? (gate.message||'上游完整性闸门未通过') : '上游未提供决策完整性 PASS');
+  }
+  var age=position&&position.dataAgeDays!=null?Number(position.dataAgeDays):NaN;
+  if(!Number.isFinite(age) && position && position.dataAsOf){
+    var stamp=Date.parse(position.dataAsOf);
+    if(Number.isFinite(stamp)) age=(Date.now()-stamp)/86400000;
+  }
+  if(!Number.isFinite(age)) reasons.push('持仓快照年龄缺失');
+  else if(age>1.5) reasons.push('持仓快照超过36小时（'+age.toFixed(2)+'天）');
+  if(position&&position.stale===true) reasons.push('上游已标记持仓快照过期');
+  return {blocked:reasons.length>0,status:reasons.length?'BLOCK':'PASS',reasons:reasons};
+}
+
 /* P0-1 行动指引：把"要减仓"变成"要降几个百分点"（公开层不泄漏金额） */
 function renderActionBar(){
   var el=document.getElementById('actionbar');
@@ -1399,6 +1420,17 @@ function renderActionBar(){
   var bt=(b&&b.today)||null;
   var pos=(bt&&bt.position)||{}, rb=(bt&&bt.rebalance)||{};
   var ev=((s&&s.engine)||{}).evidence||[];
+  var integrity=decisionIntegrityFor(b,pos);
+  if(integrity.blocked){
+    el.className='freshbar bad actionbar-structured';
+    el.replaceChildren();
+    var blocked=document.createElement('div');
+    blocked.className='action-summary';
+    blocked.textContent='⛔ 决策已阻断：'+integrity.reasons.join('；')+'。当前不提供 HOLD / ADD / TRIM / EXIT 建议。';
+    el.appendChild(blocked);
+    el.hidden=false;
+    return;
+  }
   var cur=pos.currentPct, hard=pos.hardMaxPct;
   if(cur==null||hard==null){ el.hidden=true; return; }
   var gap=Math.round((cur-hard)*100)/100;
@@ -2128,6 +2160,8 @@ function renderToday(d){
   const td = d.today || {};
   if (!td.position) { govQuery('#s-today').innerHTML = card('今日简报','', '<div class="err">today 段缺失</div>'); return; }
   const p = td.position, rb = td.rebalance || {};
+  const integrity = decisionIntegrityFor(d,p);
+  const safeAction = integrity.blocked ? 'BLOCK · 不可决策' : (rb.action||'—');
   const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
   let h = '';
   if (td.live) {
@@ -2146,12 +2180,12 @@ function renderToday(d){
     + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
     + '<div>总财富</div><div>'+(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')+'</div>'
 + '<div>需净卖出</div><div>'+(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>'))+'</div>'
-    + '<div>数据时点</div><div class="'+(p.stale?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(p.stale?' <b>⚠ 已过期，以上为推算值</b>':'')+'</div></div>'
+    + '<div>数据时点</div><div class="'+(integrity.blocked?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(integrity.blocked?' <b>⚠ 决策阻断：'+esc(integrity.reasons.join('；'))+'</b>':'')+'</div></div>'
     + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'
     + '<div>运行带</div><div><b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span></div>'
     + '<div>是否在带内</div><div class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</div>'
-    + '<div>动作</div><div><b class="'+(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))+'">'+esc(rb.action||'—')+'</b></div></div>');
+    + '<div>动作</div><div><b class="'+(integrity.blocked?'bad':(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))) +'">'+esc(safeAction)+'</b></div></div>');
   const pend = td.pending || [];
   h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length
     ? ('<table><thead><tr><th>事项</th><th>说明</th></tr></thead><tbody>'

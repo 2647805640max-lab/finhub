@@ -1429,6 +1429,12 @@ function renderActionBar(){
   var ev=((s&&s.engine)||{}).evidence||[];
   var integrity=decisionIntegrityFor(b,pos);
   if(integrity.blocked){
+    var fresh=document.getElementById('freshbar');
+    if(fresh){
+      fresh.hidden=false;
+      fresh.className='freshbar bad';
+      fresh.textContent='⛔ 决策完整性未通过：'+integrity.reasons.join('；')+'。旧 HOLD / ADD / TRIM / EXIT 不作为当前建议。';
+    }
     el.className='freshbar bad actionbar-structured';
     el.replaceChildren();
     var blocked=document.createElement('div');
@@ -2182,7 +2188,7 @@ function renderToday(d){
       + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(lv.note||'')+'</div>');
   }
   h += card('① 配置偏离', td.date||'', '<div class="kv">'
-    + '<div>当前风险仓位</div><div><b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span></div>'
+    + '<div>最近快照风险仓位</div><div><b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span></div>'
     + '<div>硬顶</div><div>'+pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span></div>'
     + '<div>偏离</div><div class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</div>'
     + '<div>总财富</div><div>'+(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')+'</div>'
@@ -2191,7 +2197,7 @@ function renderToday(d){
     + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(p.note||'')+'</div>');
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'
     + '<div>运行带</div><div><b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span></div>'
-    + '<div>是否在带内</div><div class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</div>'
+    + '<div>是否在带内</div><div class="'+(integrity.blocked?'bad':(rb.inBand?'ok':'bad'))+'">'+(integrity.blocked?'不可判定（完整性阻断）':(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归')))+'</div>'
     + '<div>动作</div><div><b class="'+(integrity.blocked?'bad':(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))) +'">'+esc(safeAction)+'</b></div></div>');
   const pend = td.pending || [];
   h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length

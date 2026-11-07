@@ -498,6 +498,10 @@ details.unk .unklist b{color:var(--txt)}
 /* tab 内不再折叠：分层已经替代了「显示更多」 */
 #app .v5group .card.tier2,#app .v5group .xcard.tier2{display:block}
 #t2bar{display:none}
+/* v6：手机端 #modebar 变成 fixed 底部导航 → 正文必须留出让位高度，否则最后一张卡被压住 */
+@media(max-width:767px){
+  body.fh-v6{padding-bottom:calc(72px + var(--safe-b))}
+}
 </style>
   <link rel="stylesheet" href="ui-v6.css?v=1">
 </head>
@@ -2801,11 +2805,17 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     return true;
   }
 
-  /* 粘性偏移运行时量取，避免写死 header / modebar 高度 */
+  /* 粘性偏移运行时量取，避免写死 header / modebar 高度。
+     v6 起手机端 #modebar 是 position:fixed 的底部导航 —— 它不占文档流，
+     不能计进顶部偏移，否则 #v5top/#v5tabs 会被推到屏幕中间（实测踩过）。 */
   function stick(){
     var h=0, m=0;
     var hd=document.querySelector('header'); if(hd) h=hd.offsetHeight;
-    var mb=document.getElementById('modebar'); if(mb) m=mb.offsetHeight;
+    var mb=document.getElementById('modebar');
+    if(mb){
+      var cs=window.getComputedStyle(mb);
+      if(cs.position!=='fixed') m=mb.offsetHeight;
+    }
     var top=document.getElementById('v5top');
     var tabs=document.getElementById('v5tabs');
     if(top) top.style.top=(h+m)+'px';

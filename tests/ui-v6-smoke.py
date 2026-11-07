@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Static smoke tests for the presentation-only FinHub UI v6 layer."""
 from pathlib import Path
+import subprocess
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +64,40 @@ class FinHubUiV6Smoke(unittest.TestCase):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)
         self.assertIn('overflow-x:auto', self.css)
+
+    def test_decision_integrity_behaviour_suite_runs_in_ci(self):
+        """The blocked-decision money gate is behavioural, so CI must EXECUTE it.
+
+        The existing CI step only runs `python tests/ui-v6-smoke.py -v`; running
+        the behaviour suite as a subprocess from here guarantees that step really
+        executes it (index.html changes trigger the workflow).  Kept as a
+        separate process so one suite crashing cannot hide the other, and the
+        child's stdout/stderr are embedded in the failure message for CI.
+        """
+        script = Path(__file__).with_name("ui-integrity-behavior.py")
+        proc = subprocess.run([sys.executable, str(script), "-v"],
+                              capture_output=True, text=True, encoding="utf-8",
+                              timeout=120)
+        detail = ("exit=%d\n--- stdout ---\n%s\n--- stderr ---\n%s"
+                  % (proc.returncode, proc.stdout, proc.stderr))
+        self.assertEqual(
+            proc.returncode, 0,
+            "behaviour suite failed (tests/ui-integrity-behavior.py):\n" + detail)
+        # unittest writes its verbose runner lines to stderr, so check both.
+        output = (proc.stdout or "") + (proc.stderr or "")
+        self.assertRegex(output, r"Ran \d+ tests", detail)
+        self.assertIn("test_blocked_decision_hides_all_personal_amounts", output, detail)
+        self.assertIn("... ok", output, detail)
+        self.assertIn("OK", output, detail)
+        # Echo the child runner lines into this CI step's log, so "the behaviour
+        # suite actually ran" is visible in the job output, not just inferred.
+        child_lines = [ln.strip() for ln in output.splitlines()
+                       if ln.strip().startswith("test_") and "... ok" in ln]
+        self.assertGreaterEqual(len(child_lines), 4,
+                                "behaviour suite reported %d executed tests:\n%s"
+                                % (len(child_lines), detail))
+        for line in child_lines:
+            print("[ui-integrity-behaviour] " + line)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

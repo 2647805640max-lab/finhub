@@ -880,26 +880,7 @@ function render(s){
     </div>`;
   }
   if(dsv.signal){
-    const dailySig=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
-    const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[dailySig.action]||'wait';
-    const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[dailySig.action]||dailySig.action;
-    h+=`<div class="card">
-      <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · ${(dsv.builtAt||'').slice(11,16)}</span></h2>
-      <div class="hero">
-        <div class="badge ${dcls}">${dcn}</div>
-        <div class="meta">
-          <div class="stage">${dailySig.stage||'—'} <span class="pill">机会 ${dailySig.opportunity??'—'} / 风险 ${dailySig.risk??'—'}</span></div>
-          <div class="adv">信心 ${dailySig.confidence||'—'}${fz.incomplete?' · <span style="color:var(--warn)">数据缺口已降档</span>':''}</div>
-        </div>
-      </div>
-      <div class="bars">
-        ${bar('风险敞口',dv.riskPct,100,'var(--up)')}
-        ${bar('目标 20%',20,100,'#7d8b9c')}
-      </div>
-      <div class="note">总资产 ${money(dv.total)} · 风险 ${money(dv.risk)}（${dv.riskPct??'—'}%）· 回到 20% 需减 ${money(dv.trimNeeded)}</div>
-      ${(dsv.checklist||[]).map(x=>`<div class="concl">· ${x}</div>`).join('')}
-      <div class="note">频率与失效条件绑定：每个因子登记了「超过 X 小时未更新即无效」，失效因子强制不投票。行情卡另有刷新周期。</div>
-    </div>`;
+    h+=renderDailySignalCard(dsv);
   }
 
   /* 大盘裁决 */
@@ -1091,33 +1072,7 @@ function render(s){
     h+=`<div class="card"><h2>我的持仓 <span class="tag">${hTag}</span></h2>
         <div class="note">${hMsg}</div></div>`;
   }else{
-    const pnlCls=cls(hd.totalPnl);
-    /* 2026-11-05 P1-8：执行单（仅解锁态有金额时才生成） */
-    const trimPlan=renderTrimPlan(hd, s);
-    h+=`<div class="card">
-      <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'}</span></h2>
-      ${trimPlan}
-      <div class="sum">
-        <div class="s"><div class="n">总资产（市值+现金）</div>
-          <div class="p">${money(hd.assets)}</div></div>
-        <div class="s"><div class="n">浮动盈亏</div>
-          <div class="p ${pnlCls}">${hd.totalPnl==null?'—':(hd.totalPnl>0?'+':'')+money(hd.totalPnl)}
-          <small class="${pnlCls}">${hd.totalPnlPct==null?'':(hd.totalPnlPct>0?'+':'')+num(hd.totalPnlPct,2)+'%'}</small></div></div>
-      </div>
-      <table>`;
-    (hd.platforms||[]).forEach(p=>{
-      h+=`<tr><td>${p.platform}<span class="pill">${p.date||''}</span></td>
-          <td class="r">${money(p.mv)}</td>
-          <td class="r ${cls(p.pnl)}">${p.pnl==null?'—':(p.pnl>0?'+':'')+money(p.pnl)}</td></tr>`;
-    });
-    h+=`<tr><td style="color:var(--dim)">现金合计</td><td class="r">${money(hd.totalCash)}</td><td class="r fl">—</td></tr>`;
-    h+=`</table>`;
-    h+=`<h2 style="margin-top:14px">Top 持仓 <span class="tag">共 ${hd.nPositions||(hd.positions||[]).length||0} 只</span></h2><table>`;
-    (hd.positions||[]).slice(0,8).forEach(p=>{
-      h+=`<tr><td>${p.name}</td><td class="r">${money(p.mv)}</td>
-          <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':signedPct(p.pnlPct)}</td></tr>`;
-    });
-    h+=`</table><div class="note">市值/成本来自 finwatch 最新快照（非实时净值）。盈亏仅统计有成本记录的持仓${hd.costCoveragePct!=null?`（覆盖市值 ${hd.costCoveragePct}%）`:''}。</div></div>`;
+    h+=renderHoldingsCard(hd, s);
   }
 
   /* 告警 */
@@ -1256,6 +1211,10 @@ function trimStateSet(v){ try{ localStorage.setItem(TRIM_STORE, JSON.stringify(v
 function renderTrimPlan(hd, s){
   var b=boardData(), bt=(b&&b.today)||{};
   var pos=bt.position||{}, cur=pos.currentPct, hard=pos.hardMaxPct;
+  /* 2026-11-07 P0：执行单是金额入口，阻断时连「需减 X 元」都不生成，
+     也不写 window.__trimNeed（避免勾选 footer 拿旧金额重算）。 */
+  var integrity=decisionIntegrityFor(b,pos);
+  if(integrity.blocked) return decisionBlockedNotice(integrity);
   var assets=hd.assets;
   if(cur==null||hard==null||!assets) return '';
   var need=Math.round(assets*(cur-hard)/100);
@@ -1417,6 +1376,89 @@ function decisionIntegrityFor(board, position){
   else if(age>1.5) reasons.push('持仓快照超过36小时（'+age.toFixed(2)+'天）');
   if(position&&position.stale===true) reasons.push('上游已标记持仓快照过期');
   return {blocked:reasons.length>0,status:reasons.length?'BLOCK':'PASS',reasons:reasons};
+}
+
+/* 2026-11-07 P0（BLOCK 不展示金额）：个人层所有金额入口统一走这里。
+   Fail closed：完整性未通过时只给阻断原因，不展示总资产/盈亏/需减/执行单。 */
+function decisionBlockedNotice(integrity){
+  var reasons=(integrity&&integrity.reasons&&integrity.reasons.length)
+    ? integrity.reasons.join('；') : '完整性未通过';
+  return '<div class="note bad">⛔ 决策已阻断（'+escHtml(reasons)+'）· 不展示金额/不生成执行单</div>';
+}
+
+/* 今日信号卡（个人层金额入口；2026-11-07 P0 加门：阻断时无总资产/风险/需减金额）。 */
+function renderDailySignalCard(dsv){
+  var b=boardData(), bt=(b&&b.today)||{}, pos=(bt&&bt.position)||{};
+  var integrity=decisionIntegrityFor(b,pos);
+  if(integrity.blocked){
+    return `<div class="card">
+      <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · 决策已阻断</span></h2>
+      ${decisionBlockedNotice(integrity)}
+      <div class="note">总资产 / 风险 / 金额类偏离属个人层：决策完整性未通过时不展示金额、不给执行建议。</div>
+    </div>`;
+  }
+  const dailySig=dsv.signal, dv=dsv.deviation||{}, fz=dsv.freshness||{};
+  const dcls={ADD:'add',TRIM:'trim',EXIT:'trim',WAIT:'wait'}[dailySig.action]||'wait';
+  const dcn={ADD:'加仓窗口',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[dailySig.action]||dailySig.action;
+  return `<div class="card">
+      <h2>今日信号卡 <span class="tag">日频 ${dsv.date||'—'} · ${(dsv.builtAt||'').slice(11,16)}</span></h2>
+      <div class="hero">
+        <div class="badge ${dcls}">${dcn}</div>
+        <div class="meta">
+          <div class="stage">${dailySig.stage||'—'} <span class="pill">机会 ${dailySig.opportunity??'—'} / 风险 ${dailySig.risk??'—'}</span></div>
+          <div class="adv">信心 ${dailySig.confidence||'—'}${fz.incomplete?' · <span style="color:var(--warn)">数据缺口已降档</span>':''}</div>
+        </div>
+      </div>
+      <div class="bars">
+        ${bar('风险敞口',dv.riskPct,100,'var(--up)')}
+        ${bar('目标 20%',20,100,'#7d8b9c')}
+      </div>
+      <div class="note">总资产 ${money(dv.total)} · 风险 ${money(dv.risk)}（${dv.riskPct??'—'}%）· 回到 20% 需减 ${money(dv.trimNeeded)}</div>
+      ${(dsv.checklist||[]).map(x=>`<div class="concl">· ${x}</div>`).join('')}
+      <div class="note">频率与失效条件绑定：每个因子登记了「超过 X 小时未更新即无效」，失效因子强制不投票。行情卡另有刷新周期。</div>
+    </div>`;
+}
+
+/* 我的持仓（个人层金额入口；2026-11-07 P0 加门：阻断时无金额/无执行单）。 */
+function renderHoldingsCard(hd, s){
+  var b=boardData(), bt=(b&&b.today)||{}, pos=(bt&&bt.position)||{};
+  var integrity=decisionIntegrityFor(b,pos);
+  if(integrity.blocked){
+    return `<div class="card">
+      <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'} · 决策已阻断</span></h2>
+      ${decisionBlockedNotice(integrity)}
+      <div class="note">持仓金额与浮动盈亏属个人层：完整性未通过时不展示旧金额、不生成执行单。</div>
+    </div>`;
+  }
+  let h='';
+  const pnlCls=cls(hd.totalPnl);
+  /* 2026-11-05 P1-8：执行单（仅解锁态有金额时才生成） */
+  const trimPlan=renderTrimPlan(hd, s);
+  h+=`<div class="card">
+      <h2>我的持仓 <span class="tag">快照 ${hd.asof||'—'}</span></h2>
+      ${trimPlan}
+      <div class="sum">
+        <div class="s"><div class="n">总资产（市值+现金）</div>
+          <div class="p">${money(hd.assets)}</div></div>
+        <div class="s"><div class="n">浮动盈亏</div>
+          <div class="p ${pnlCls}">${hd.totalPnl==null?'—':(hd.totalPnl>0?'+':'')+money(hd.totalPnl)}
+          <small class="${pnlCls}">${hd.totalPnlPct==null?'':(hd.totalPnlPct>0?'+':'')+num(hd.totalPnlPct,2)+'%'}</small></div></div>
+      </div>
+      <table>`;
+  (hd.platforms||[]).forEach(p=>{
+    h+=`<tr><td>${p.platform}<span class="pill">${p.date||''}</span></td>
+          <td class="r">${money(p.mv)}</td>
+          <td class="r ${cls(p.pnl)}">${p.pnl==null?'—':(p.pnl>0?'+':'')+money(p.pnl)}</td></tr>`;
+  });
+  h+=`<tr><td style="color:var(--dim)">现金合计</td><td class="r">${money(hd.totalCash)}</td><td class="r fl">—</td></tr>`;
+  h+=`</table>`;
+  h+=`<h2 style="margin-top:14px">Top 持仓 <span class="tag">共 ${hd.nPositions||(hd.positions||[]).length||0} 只</span></h2><table>`;
+  (hd.positions||[]).slice(0,8).forEach(p=>{
+    h+=`<tr><td>${p.name}</td><td class="r">${money(p.mv)}</td>
+          <td class="r ${cls(p.pnlPct)}">${p.pnlPct==null?'<span class="fl">—</span>':signedPct(p.pnlPct)}</td></tr>`;
+  });
+  h+=`</table><div class="note">市值/成本来自 finwatch 最新快照（非实时净值）。盈亏仅统计有成本记录的持仓${hd.costCoveragePct!=null?`（覆盖市值 ${hd.costCoveragePct}%）`:''}。</div></div>`;
+  return h;
 }
 
 /* P0-1 行动指引：把"要减仓"变成"要降几个百分点"（公开层不泄漏金额） */
@@ -1659,6 +1701,10 @@ async function loadExtras(){
   window.__extrasData=b;
   renderExtras(b);
   try{ renderDecisionBars(); }catch(e){}   // 2026-11-05 P0：board 到达后重算首屏决策条
+  /* 2026-11-07 P0：个人层（我的持仓 / 今日信号卡）的完整性闸门数据在 board 里。
+     首次 load() 早于 board 到达 → 个人层按 fail-closed 显示「已阻断」；
+     board 到达后必须重渲染一次，否则那份阻断会挂到下一次 60s 轮询（看起来像回归）。 */
+  try{ var st=stateData(); if(st) render(st); }catch(e){}
   if(window.GOV) window.GOV.render(b);
 }
 /* 结论卡（2026-11-06）：数据来自 board.json 的 verdict 段。

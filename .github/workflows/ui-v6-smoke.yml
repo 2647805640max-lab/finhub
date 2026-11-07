@@ -1,0 +1,26 @@
+name: FinHub UI v6 smoke checks
+on:
+  push:
+    paths:
+      - "index.html"
+      - "board.html"
+      - "ui-v6.css"
+      - "tests/ui-v6-smoke.py"
+      - ".github/workflows/ui-v6-smoke.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "board.html"
+      - "ui-v6.css"
+      - "tests/ui-v6-smoke.py"
+      - ".github/workflows/ui-v6-smoke.yml"
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run presentation and contract smoke tests
+        run: python -m unittest discover -s tests -p "ui-v6-smoke.py" -v

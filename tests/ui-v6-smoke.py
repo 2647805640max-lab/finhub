@@ -13,8 +13,8 @@ class FinHubUiV6Smoke(unittest.TestCase):
         cls.css = (ROOT / "ui-v6.css").read_text(encoding="utf-8")
 
     def test_both_entry_points_load_shared_theme(self):
-        self.assertIn('href="ui-v6.css?v=1"', self.index)
-        self.assertIn('href="ui-v6.css?v=1"', self.board)
+        self.assertIn('href="ui-v6.css?v=2"', self.index)
+        self.assertIn('href="ui-v6.css?v=2"', self.board)
         self.assertIn('<body class="fh-v6">', self.index)
         self.assertIn('<body class="fh-v6">', self.board)
 

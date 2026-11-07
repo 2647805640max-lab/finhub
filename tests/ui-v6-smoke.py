@@ -48,7 +48,7 @@ class FinHubUiV6Smoke(unittest.TestCase):
 
     def test_unverified_or_stale_decisions_fail_closed(self):
         for marker in ("decisionIntegrityFor", "gate.status!=='PASS'",
-                       "gate.canRecommend!==true", "age>1.5",
+                       "gate.canRecommend!==true", "gate.checkedAt", "24*60*60*1000", "age>1.5",
                        "BLOCK · 不可决策", "当前不提供 HOLD / ADD / TRIM / EXIT 建议",
                        "完整性阻断"):
             self.assertIn(marker, self.index)

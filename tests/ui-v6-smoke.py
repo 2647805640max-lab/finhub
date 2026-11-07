@@ -38,6 +38,14 @@ class FinHubUiV6Smoke(unittest.TestCase):
                        '#actionbar', '@media(max-width:430px)'):
             self.assertIn(marker, self.css)
 
+    def test_action_bar_is_structured_without_changing_decision_inputs(self):
+        self.assertIn("action-summary", self.index)
+        self.assertIn("action-evidence", self.index)
+        self.assertIn("textContent=summary", self.index)
+        self.assertIn("ev.slice(0,2)", self.index)
+        self.assertIn(".actionbar-structured", self.css)
+        self.assertIn("grid-template-columns:minmax(0,1fr)", self.css)
+
     def test_theme_is_scoped_and_does_not_hide_data_by_default(self):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)

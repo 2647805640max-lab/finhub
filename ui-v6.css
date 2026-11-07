@@ -289,3 +289,76 @@ body.fh-v6 #v5pills .pill{
     padding:8px 11px;font-size:12px;line-height:1.7;
   }
 }
+
+
+/* FinHub decision cockpit refinement — presentation only.
+   Preserve the v5 grouping, policy values, evidence ordering and data contracts. */
+body.fh-v6 #actionbar.actionbar-structured{
+  display:grid;grid-template-columns:minmax(250px,.78fr) minmax(0,1.6fr);
+  align-items:center;gap:10px 20px;padding:13px 16px;
+  line-height:1.65;white-space:normal;overflow-wrap:anywhere;
+}
+body.fh-v6 #actionbar .action-summary{
+  min-width:0;font-size:14px;font-weight:750;letter-spacing:.005em;
+}
+body.fh-v6 #actionbar .action-evidence{
+  min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
+  color:#aebed2;font-size:12px;line-height:1.65;
+}
+body.fh-v6 #actionbar .action-evidence-item{
+  display:inline-flex;min-width:0;max-width:100%;padding:3px 8px;
+  border:1px solid rgba(137,164,198,.15);border-radius:8px;
+  background:rgba(7,13,22,.28);overflow-wrap:anywhere;
+}
+body.fh-v6 #v5pills{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+body.fh-v6 #v5pills .pill{
+  min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;
+  line-height:1.45;
+}
+body.fh-v6 header .ts{min-width:0}
+body.fh-v6 #gen{max-width:min(76vw,900px);line-height:1.55;text-wrap:pretty}
+body.fh-v6 .v5group>.card,body.fh-v6 .v5group>.xcard{min-width:0}
+body.fh-v6 .v5group .f,body.fh-v6 .v5group .note,
+body.fh-v6 .v5group .concl,body.fh-v6 .v5group p{
+  overflow-wrap:anywhere;word-break:normal;
+}
+body.fh-v6 .v5group .f{line-height:1.7}
+body.fh-v6 .v5group .f .v{font-variant-numeric:tabular-nums}
+@media(min-width:1280px){
+  body.fh-v6 .v5group{gap:15px}
+  body.fh-v6 .v5group>.card,body.fh-v6 .v5group>.xcard{padding:18px 19px}
+  body.fh-v6 #actionbar.actionbar-structured{grid-template-columns:minmax(300px,.72fr) minmax(0,1.8fr)}
+}
+@media(min-width:768px) and (max-width:1023px){
+  body.fh-v6 .v5group>.card,body.fh-v6 .v5group>.xcard{padding:15px}
+}
+@media(max-width:767px){
+  body.fh-v6 header{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;column-gap:10px;row-gap:5px;
+  }
+  body.fh-v6 header .brand{grid-column:1;grid-row:1}
+  body.fh-v6 header .ts{grid-column:2;grid-row:1;max-width:65vw;text-align:right}
+  body.fh-v6 #now{font-size:20px}
+  body.fh-v6 #gen{max-width:100%;font-size:10px;overflow-wrap:anywhere}
+  body.fh-v6 #t2bar{grid-column:1/-1;justify-self:end}
+  body.fh-v6 #freshbar,body.fh-v6 #marketbar{line-height:1.65;overflow-wrap:anywhere}
+  body.fh-v6 #actionbar.actionbar-structured{
+    grid-template-columns:minmax(0,1fr);gap:8px;padding:12px 13px;
+    font-size:13px;line-height:1.75;
+  }
+  body.fh-v6 #actionbar .action-summary{font-size:14px;line-height:1.65}
+  body.fh-v6 #actionbar .action-evidence{gap:6px;font-size:12px}
+  body.fh-v6 #actionbar .action-evidence-item{display:block;width:100%;padding:6px 8px}
+  body.fh-v6 #v5pills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  body.fh-v6 #v5pills .pill{display:flex;align-items:center;min-height:32px;padding:5px 9px;border-radius:9px;font-size:11px}
+  body.fh-v6 #v5tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  body.fh-v6 #v5tabs::-webkit-scrollbar{display:none}
+  body.fh-v6 #v5tabs button{flex:0 0 auto;min-height:40px}
+  body.fh-v6 .v5group>.card,body.fh-v6 .v5group>.xcard,
+  body.fh-v6 .v5group>.card:first-child,body.fh-v6 .v5group>.xcard:first-child{
+    padding:14px 13px;
+  }
+  body.fh-v6 .v5group .f{padding:10px 0;line-height:1.75}
+  body.fh-v6 .v5group .note,body.fh-v6 .v5group .concl{line-height:1.75}
+}

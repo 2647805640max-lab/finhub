@@ -24,3 +24,19 @@ jobs:
           python-version: "3.12"
       - name: Run presentation and contract smoke tests
         run: python tests/ui-v6-smoke.py -v
+      - name: Check inline JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          for page in ("index.html", "board.html"):
+              html = Path(page).read_text(encoding="utf-8")
+              scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script>", html, flags=re.I)
+              for number, source in enumerate(scripts):
+                  if not source.strip():
+                      continue
+                  with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
+                      handle.write(source)
+                      handle.flush()
+                      subprocess.run(["node", "--check", handle.name], check=True)
+          PY

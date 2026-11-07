@@ -476,8 +476,8 @@ function renderToday(d){
   if (td.live) {
     const lv = td.live;
     dual += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
-      + kv('风险仓位','<b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span>')
-      + kv('总资产',(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元')
+      + kv('风险仓位','<b>'+(integrity.blocked?'—（快照不可用于决策）':pct(lv.riskPct))+'</b> <span class="dim">'+(integrity.blocked?'':'（目标 '+pct(lv.targetPct)+'）')+'</span>')
+      + kv('总资产',(integrity.blocked?'—（快照不可用于决策）':(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN')+' 元')))
       + kv('需减（到目标）','<b>'+(integrity.blocked?'—（完整性阻断）':(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0})+' 元'))+'</b>')
       + kv('动作','<b class="'+(integrity.blocked?'bad':'')+'">'+esc(integrity.blocked?'BLOCK · 不可决策':(lv.action||'—'))+'</b> <span class="dim">信心 '+esc(integrity.blocked?'已禁用':(lv.confidence||'—'))+'</span>')
       + kv('生成时间','<span class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</span>')+'</div>'
@@ -487,8 +487,8 @@ function renderToday(d){
     + kv('最近快照风险仓位','<b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span>')
     + kv('硬顶',pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span>')
     + kv('偏离','<span class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</span>')
-    + kv('总财富',(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元'))
-    + kv('需净卖出',(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>')))
+    + kv('总财富',(integrity.blocked?'<span class="dim">完整性阻断，不展示旧金额</span>':(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元')))
+    + kv('需净卖出',(integrity.blocked?'<span class="dim">完整性阻断，不展示旧金额</span>':(p.reduceDerived==null?'<span class="dim">公开件不含金额</span>':('<b>'+Number(p.reduceDerived).toLocaleString('zh-CN',{maximumFractionDigits:2})+'</b> 元 <span class="dim">（authority '+(p.reduceAuthority==null?'—':Number(p.reduceAuthority).toLocaleString('zh-CN'))+'）</span>'))))
     + kv('数据时点','<span class="'+(integrity.blocked?'bad':'ok')+'">'+esc(p.dataAsOf||'—')+' · '+(p.dataAgeDays==null?'':p.dataAgeDays+' 天前')+(integrity.blocked?' <b>⚠ 决策阻断：'+esc(integrity.reasons.join('；'))+'</b>':'')+'</span>')+'</div>'
     + '<div class="note mt2">'+esc(p.note||'')+'</div>', 'cal-led');
   // 两口径齐备时才用 .dual 包裹；缺 today.live 时不留空壳（否则桌面网格会空出整列）

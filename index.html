@@ -2964,10 +2964,14 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
       var pos=(b.today&&b.today.position)||{};
       var pm=ts2ms(pos.dataAsOf||pos.asOf);
       var pd=(pos.dataAgeDays!=null)?Number(pos.dataAgeDays):(pm!=null?(Date.now()-pm)/86400000:null);
+      var integrity=decisionIntegrityFor(b,pos);
       if(pd!=null && !isNaN(pd)){
         var pl=pd<1?(Math.round(pd*24)+'小时前'):(Math.round(pd)+'天前');
-        mk('持仓 '+pl, pd>2?'warn':'ok');
+        mk('持仓 '+pl, integrity.blocked?'bad':'ok');
+      }else{
+        mk('持仓时点缺失','bad');
       }
+      if(integrity.blocked) mk('决策 BLOCK','bad');
       var devs=((b.chain||{}).knownDeviations||[]).filter(function(d){
         var sv=String(d.severity||'').toLowerCase();
         return (sv==='high'||sv==='medium')&&String(d.status||'').indexOf('未执行')>=0;

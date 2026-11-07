@@ -463,6 +463,12 @@ function renderToday(d){
   const p = td.position, rb = td.rebalance || {};
   const integrity = decisionIntegrityFor(d,p);
   const safeAction = integrity.blocked ? 'BLOCK · 不可决策' : (rb.action||'—');
+  if(integrity.blocked){
+    const why=esc(integrity.reasons.join('；'));
+    // Keep the block visible before any portfolio numbers or rebalance labels.
+    // It is a system refusal, never a HOLD recommendation.
+    h = card('⛔ 决策完整性阻断','BLOCK','<div class="bad">当前不提供 HOLD / ADD / TRIM / EXIT 建议。</div><div class="note mt2">'+why+'</div>');
+  }
   const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
   let h = '';
   // 顶部双口径区（F-22）：信号卡口径在前、台账口径在后；两口径数值不同是预期，互不覆盖。
@@ -478,7 +484,7 @@ function renderToday(d){
       + '<div class="note mt2">'+esc(lv.note||'')+'</div>', 'cal-sig');
   }
   dual += card('① 配置偏离', td.date||'', '<div class="kv">'
-    + kv('当前风险仓位','<b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span>')
+    + kv('最近快照风险仓位','<b class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+pct(p.currentPct)+'</b> <span class="dim">（authority '+pct(p.authorityPct)+'）</span>')
     + kv('硬顶',pct(p.hardMaxPct)+' <span class="dim">（引擎硬编码，rules.json 只能收紧）</span>')
     + kv('偏离','<span class="'+((dev!=null&&dev>0)?'bad':'ok')+'">'+(dev==null?'—':((dev>0?'+':'')+dev.toFixed(2)+' pp'))+'</span>')
     + kv('总财富',(p.totalWealthCny==null?'<span class="dim">公开件不含金额</span>':Number(p.totalWealthCny).toLocaleString('zh-CN')+' 元'))
@@ -489,7 +495,7 @@ function renderToday(d){
   h += dual ? '<div class="dual">'+dual+'</div>' : '';
   h += card('② 再平衡提醒','阈值式', '<div class="kv">'
     + kv('运行带','<b>['+(rb.bandLowPct==null?'—':rb.bandLowPct)+'%, '+(rb.bandHighPct==null?'—':rb.bandHighPct)+'%]</b> <span class="dim">（口径冲突：研究引擎 15 / 生产规则 22，未裁定）</span>')
-    + kv('是否在带内','<span class="'+(rb.inBand?'ok':'bad')+'">'+(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归'))+'</span>')
+    + kv('是否在带内','<span class="'+(integrity.blocked?'bad':(rb.inBand?'ok':'bad'))+'">'+(integrity.blocked?'不可判定（完整性阻断）':(rb.inBand==null?'—':(rb.inBand?'带内 → 不动':'带外 → 需回归')))+'</span>')
     + kv('动作','<b class="'+(integrity.blocked?'bad':(rb.action==='TRIM'?'bad':(rb.action==='ADD'?'warn':'ok'))) +'">'+esc(safeAction)+'</b>')+'</div>');
   const pend = td.pending || [];
   h += card('③ 今日待确认', (td.pendingCnt||0)+' 条', pend.length

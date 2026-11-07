@@ -2169,8 +2169,8 @@ function renderToday(d){
     h += card('⓪ 今日口径 · finhub 信号卡', esc(lv.asOf||''), '<div class="kv">'
       + '<div>风险仓位</div><div><b>'+pct(lv.riskPct)+'</b> <span class="dim">（目标 '+pct(lv.targetPct)+'）</span></div>'
       + '<div>总资产</div><div>'+(lv.totalWealth==null?'—':Number(lv.totalWealth).toLocaleString('zh-CN'))+' 元</div>'
-      + '<div>需减（到目标）</div><div><b>'+(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0}))+'</b> 元</div>'
-      + '<div>动作</div><div><b>'+esc(lv.action||'—')+'</b> <span class="dim">信心 '+esc(lv.confidence||'—')+'</span></div>'
+      + '<div>需减（到目标）</div><div><b>'+(integrity.blocked?'—（完整性阻断）':(lv.reduceToTarget==null?'—':Number(lv.reduceToTarget).toLocaleString('zh-CN',{maximumFractionDigits:0})+' 元'))+'</b></div>'
+      + '<div>动作</div><div><b class="'+(integrity.blocked?'bad':'')+'">'+esc(integrity.blocked?'BLOCK · 不可决策':(lv.action||'—'))+'</b> <span class="dim">信心 '+esc(integrity.blocked?'已禁用':(lv.confidence||'—'))+'</span></div>'
       + '<div>生成时间</div><div class="dim">'+esc(lv.builtAt||'—')+(lv.dataIncomplete?' · <b class="bad">数据有缺口</b>':'')+'</div></div>'
       + '<div class="dim" style="font-size:11px;margin-top:8px">'+esc(lv.note||'')+'</div>');
   }

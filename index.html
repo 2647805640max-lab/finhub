@@ -1578,6 +1578,15 @@ async function loadExtras(){
    为什么放第一张：用户要的是「现在什么情况、结论是什么」，不是先看仪表。
    为什么 data-tier="1"：classifyTier2() 会把未标记的卡片折叠隐藏（历史上出现过
    「做了但用户看不见」），这里显式标一级屏。verdict 缺失时整卡不出，不留空壳。 */
+/* ── esc：全局转义函数（2026-11-07 从治理 IIFE 里提上来）─────────────────
+   原来的位置是 <script> 块 2 里 (function(){ "use strict"; ... })() 内部
+   的 `const esc = s => ...`。IIFE 里的 const **对 renderVerdict 不可见** ——
+   而 renderVerdict 用 esc 转义 ⇒ ReferenceError: esc is not defined
+   ⇒ 整张「现在什么情况」结论卡静默消失（外面套着空 catch(e){}，无从发现）。
+   提为**顶层函数声明**：会被提升、对本 script 块内的任何调用都可用，
+   并且作为 classic script 的全局绑定，对其它 script 块（治理 IIFE）同样可见。 */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
 /* ── QIS 因子演算块（2026-11-07 新增）──────────────────────────────────────
    数据源 = board.json 的 qis 段（由 tools\qis-factors.py 产出，是因子演算的唯一生产者）。
 
@@ -1758,8 +1767,19 @@ function renderExtras(b){
   }
   const app=document.getElementById('app');
   if(!app) return;
-  /* 结论卡置顶：结果先行，不让用户先读仪表 */
-  try{ const vh=renderVerdict(b); if(vh) app.insertAdjacentHTML('afterbegin', vh); }catch(e){}
+  /* 结论卡置顶：结果先行，不让用户先读仪表
+     ★ 2026-11-07：原来这里是空的 catch(e){} —— 渲染失败连日志都不留，
+     静默失效比报错更严重（结论卡就是这么消失了一天没被发现）。
+     现在把错误写进 console 和 document.title，并在页面上显示一条错误条，
+     避免「以为有、其实没有」。 */
+  try{ const vh=renderVerdict(b); if(vh) app.insertAdjacentHTML('afterbegin', vh); }
+  catch(e){
+    console.error('renderVerdict 渲染失败：', e);
+    document.title='渲染失败: '+(e&&e.message?e.message:e);
+    app.insertAdjacentHTML('afterbegin',
+      '<div class="card" data-tier="1"><h2>结论卡渲染失败<span class="tag">请刷新或看 console</span></h2>'
+      +'<div class="note">'+esc(String(e&&e.message?e.message:e))+'</div></div>');
+  }
   let x='';
   const n=b.nationalTeam;
   if(n){
@@ -1813,7 +1833,8 @@ function askNotify(){
 "use strict";
 
 const govQuery = s => document.querySelector(s);
-const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* esc 已于 2026-11-07 提到全局（见上方 renderQisBlock 附近的声明）。
+   原来这里是 IIFE 私有的 `const esc`，导致 renderVerdict 拿不到 ⇒ 结论卡整张不渲染。 */
 const govNum = n => (n==null||n==='')?'—':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:2});
 
 function card(title, tag, body){ return `<div class="card"><h2>${esc(title)}<span class="tag">${esc(tag||'')}</span></h2>${body}</div>`; }

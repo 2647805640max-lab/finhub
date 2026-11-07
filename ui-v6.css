@@ -247,3 +247,45 @@ body.fh-v6:not(:has(#page-gov))>footer{
   body.fh-v6:not(:has(#page-gov))>main>section>.card:first-child{grid-column:1/-1;padding:14px}
   body.fh-v6:not(:has(#page-gov))>footer{position:static;margin-top:12px}
 }
+
+
+/* 2026-11-07 real-device correction: 393px status pills + action guidance.
+   No data or decision semantics are changed; this only makes long real-world
+   Chinese/technical strings wrap instead of widening the viewport. */
+body.fh-v6 #page-live,
+body.fh-v6 #v5top,
+body.fh-v6 #v5pills,
+body.fh-v6 #actionbar,
+body.fh-v6 #devbar,
+body.fh-v6 #notifbar{
+  min-width:0;max-width:100%;
+}
+body.fh-v6 #actionbar,
+body.fh-v6 #devbar,
+body.fh-v6 #notifbar{
+  white-space:normal;line-height:1.75;
+  overflow-wrap:anywhere;word-break:normal;
+  text-wrap:pretty;
+}
+body.fh-v6 #v5pills .pill{
+  min-width:0;max-width:100%;white-space:normal;
+  overflow-wrap:anywhere;word-break:normal;
+}
+@media(max-width:430px){
+  body.fh-v6 #v5pills{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;gap:6px;
+  }
+  body.fh-v6 #v5pills .pill{
+    display:flex;align-items:center;justify-content:flex-start;
+    min-height:30px;padding:4px 8px;border-radius:9px;
+    font-size:11px;line-height:1.45;
+  }
+  body.fh-v6 #actionbar{
+    padding:10px 11px;font-size:13px;line-height:1.8;
+    letter-spacing:0;overflow-wrap:anywhere;
+  }
+  body.fh-v6 #devbar,body.fh-v6 #notifbar{
+    padding:8px 11px;font-size:12px;line-height:1.7;
+  }
+}

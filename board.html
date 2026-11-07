@@ -439,6 +439,13 @@ function decisionIntegrityFor(board, position){
   var reasons=[];
   if(!gate || gate.status!=='PASS' || gate.canRecommend!==true)
     reasons.push(gate?(gate.message||'上游完整性闸门未通过'):'上游未提供决策完整性 PASS');
+  var gateStamp=gate&&gate.checkedAt?Date.parse(gate.checkedAt):NaN;
+  if(!Number.isFinite(gateStamp)) reasons.push('完整性审计时点缺失');
+  else {
+    var gateAgeMs=Date.now()-gateStamp;
+    if(gateAgeMs>24*60*60*1000) reasons.push('完整性审计结果超过24小时');
+    if(gateAgeMs< -5*60*1000) reasons.push('完整性审计时点位于未来');
+  }
   var age=position&&position.dataAgeDays!=null?Number(position.dataAgeDays):NaN;
   if(!Number.isFinite(age)&&position&&position.dataAsOf){
     var stamp=Date.parse(position.dataAsOf);

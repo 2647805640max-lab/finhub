@@ -50,7 +50,8 @@ class FinHubUiV6Smoke(unittest.TestCase):
         for marker in ("decisionIntegrityFor", "gate.status!=='PASS'",
                        "gate.canRecommend!==true", "gate.checkedAt", "24*60*60*1000", "age>1.5",
                        "BLOCK · 不可决策", "当前不提供 HOLD / ADD / TRIM / EXIT 建议",
-                       "完整性阻断", "不可判定（完整性阻断）", "完整性阻断，不展示旧金额", "决策完整性未通过"):
+                       "完整性阻断", "不可判定（完整性阻断）", "完整性阻断，不展示旧金额",
+                       "决策完整性未通过", "最近快照风险仓位"):
             self.assertIn(marker, self.index)
         for marker in ("decisionIntegrityFor", "age>1.5", "BLOCK · 不可决策",
                        "完整性阻断"):

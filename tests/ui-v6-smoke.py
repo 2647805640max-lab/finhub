@@ -32,6 +32,12 @@ class FinHubUiV6Smoke(unittest.TestCase):
                        'minmax(0,1fr)'):
             self.assertIn(marker, self.css)
 
+    def test_narrow_screen_status_and_decision_bars_wrap(self):
+        for marker in ('#v5pills', 'grid-template-columns:repeat(2,minmax(0,1fr))',
+                       'overflow-wrap:anywhere', 'white-space:normal',
+                       '#actionbar', '@media(max-width:430px)'):
+            self.assertIn(marker, self.css)
+
     def test_theme_is_scoped_and_does_not_hide_data_by_default(self):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)

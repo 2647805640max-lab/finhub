@@ -1578,37 +1578,102 @@ async function loadExtras(){
    为什么放第一张：用户要的是「现在什么情况、结论是什么」，不是先看仪表。
    为什么 data-tier="1"：classifyTier2() 会把未标记的卡片折叠隐藏（历史上出现过
    「做了但用户看不见」），这里显式标一级屏。verdict 缺失时整卡不出，不留空壳。 */
+/* ── QIS 因子演算块（2026-11-07 新增）──────────────────────────────────────
+   数据源 = board.json 的 qis 段（由 tools\qis-factors.py 产出，是因子演算的唯一生产者）。
+
+   口径纪律：qis 的因子定义、5% 单只上限、分数权重**都没有登记进 conventions.json**，
+   所以这是**研究级读数**，不是仓位。页面必须显式挂「研究口径·非仓位」，
+   否则用户会把它当成引擎给出的仓位建议 —— 那是误导。
+   契约缺失 / status 不是 ok|constrained / factors 为空 ⇒ 整块不渲染，不留空壳。 */
+function renderQisBlock(q){
+  if(!q) return '';
+  if(q.status!=='ok' && q.status!=='constrained') return '';
+  var f=q.factors||{};
+  var keys=Object.keys(f);
+  if(!keys.length) return '';
+  var a=q.allocation||{};
+  var rows=keys.map(function(k){return {k:k,v:f[k]};});
+  rows.sort(function(x,y){return (y.v.weight||0)-(x.v.weight||0);});
+  function isNum(x){return x!==null&&x!==undefined&&typeof x==='number'&&!isNaN(x);}
+  function pct(x,dp){return isNum(x)?(x*100).toFixed(dp==null?2:dp)+'%':'—';}
+  function signed(x,dp){
+    if(!isNum(x)) return '—';
+    var s=(x*100).toFixed(dp==null?2:dp);
+    return (x>=0?'+':'')+s+'%';
+  }
+  function dirColor(x){return !isNum(x)?'#c9d4e2':(x>=0?'#3ddc97':'#ff5c5c');}
+  var h='<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)">';
+  h+='<b style="font-size:13px">QIS 因子演算 · '+esc(q.asOf||'')+'</b>';
+  h+='<span class="tag" style="margin-left:6px">n='+esc(String(isNum(q.nAssets)?q.nAssets:rows.length))+'</span>';
+  h+='<span class="tag" style="margin-left:6px;color:#ffb340;border-color:#ffb340">研究口径·非仓位</span>';
+  h+='<div style="display:flex;gap:10px;margin-top:9px;font-size:11px;color:#7c8899">'
+    +'<span style="flex:0 0 88px">标的</span><span style="flex:1">动量</span>'
+    +'<span style="flex:1">波动</span><span style="flex:1">偏离</span>'
+    +'<span style="flex:1">分数</span><span style="flex:1">研究权重</span></div>';
+  rows.forEach(function(r){
+    var v=r.v||{};
+    h+='<div style="display:flex;gap:10px;margin-top:5px;font-size:12px;'
+      +'font-family:ui-monospace,Menlo,Consolas,monospace">'
+      +'<span style="flex:0 0 88px;font-family:inherit;color:#e8eef7">'+esc(v.name||r.k)+'</span>'
+      +'<span style="flex:1;color:'+dirColor(v.momentum)+'">'+esc(signed(v.momentum))+'</span>'
+      +'<span style="flex:1;color:#c9d4e2">'+esc(pct(v.vol))+'</span>'
+      +'<span style="flex:1;color:'+dirColor(v.smaDev)+'">'+esc(signed(v.smaDev))+'</span>'
+      +'<span style="flex:1;color:#e8eef7">'+esc(isNum(v.score)?v.score.toFixed(3):'—')+'</span>'
+      +'<span style="flex:1;color:#e8eef7">'+esc(pct(v.weight))+'</span>'
+      +'</div>';
+  });
+  var line;
+  if(isNum(a.undeployed)&&a.undeployed>1e-12){
+    line='⚠ 预算 '+pct(a.riskBudget,1)+' 只部署 '+pct(a.deployed,1)+'（未部署 '+pct(a.undeployed,1)
+        +'）：标的数不足 '+(isNum(a.minAssetsForFullBudget)?a.minAssetsForFullBudget:'—')+' 只，单只上限 '
+        +pct(a.maxAssetWeight,0)+' 装不满';
+  }else{
+    line='部署 '+pct(a.deployed,1)+' / 预算 '+pct(a.riskBudget,1)+' · '
+        +(a.scoreDiscriminating?'分数可区分':'分数不可区分（标的数不足）');
+  }
+  h+='<div class="note" style="margin-top:8px">'+esc(line)+'</div>';
+  if(q.caliber_note) h+='<div class="note" style="margin-top:3px;opacity:.7">'+esc(q.caliber_note)+'</div>';
+  h+='</div>';
+  return h;
+}
+
 function renderVerdict(b){
   var v=b&&b.verdict;
-  if(!v||!v.items||!v.items.length) return '';
+  var qh=renderQisBlock(b&&b.qis);
+  var hasV=!!(v&&v.items&&v.items.length);
+  if(!hasV && !qh) return '';
   var col={bad:'#ff5c5c',watch:'#ffb340',good:'#3ddc97'};
   var lab={bad:'坏消息',watch:'要注意',good:'好消息'};
-  var h='<div class="card" data-tier="1"><h2>'+esc(v.title||'现在什么情况')
-      +'<span class="tag">'+esc(v.asOf||'')+'</span></h2>';
-  if(v.summary) h+='<div class="note">'+esc(v.summary)+'</div>';
-  (v.items||[]).forEach(function(it){
-    var c=col[it.level]||'#7c8899', L=lab[it.level]||String(it.level||'');
-    h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">';
-    h+='<div><span style="color:'+c+';font-size:11px;border:1px solid '+c
-      +';border-radius:4px;padding:0 5px;margin-right:6px">'+esc(L)+'</span>';
-    h+='<b style="font-size:14px;line-height:1.45">'+esc(it.headline||'')+'</b></div>';
-    if(it.body) h+='<div class="note" style="margin-top:5px">'+esc(it.body)+'</div>';
-    if(it.numbers) h+='<div style="margin-top:5px;font-family:ui-monospace,Menlo,Consolas,monospace;'
-      +'font-size:13px;color:#e8eef7;overflow-wrap:anywhere">'+esc(it.numbers)+'</div>';
-    if(it.action) h+='<div class="note" style="margin-top:5px;color:'+c+'">→ '+esc(it.action)+'</div>';
-    h+='</div>';
-  });
-  if(v.todo&&v.todo.length){
-    h+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)">';
-    h+='<b style="font-size:13px">接下来要做的事</b>';
-    v.todo.forEach(function(t,i){
-      h+='<div style="margin-top:7px"><b>'+(i+1)+'. '+esc(t.what||'')+'</b>';
-      if(t.why) h+='<div class="note" style="margin-top:2px">为什么：'+esc(t.why)+'</div>';
+  var h='<div class="card" data-tier="1">'
+      +(hasV? ('<h2>'+esc(v.title||'现在什么情况')
+        +'<span class="tag">'+esc(v.asOf||'')+'</span></h2>') : '');
+  if(hasV){
+    if(v.summary) h+='<div class="note">'+esc(v.summary)+'</div>';
+    (v.items||[]).forEach(function(it){
+      var c=col[it.level]||'#7c8899', L=lab[it.level]||String(it.level||'');
+      h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">';
+      h+='<div><span style="color:'+c+';font-size:11px;border:1px solid '+c
+        +';border-radius:4px;padding:0 5px;margin-right:6px">'+esc(L)+'</span>';
+      h+='<b style="font-size:14px;line-height:1.45">'+esc(it.headline||'')+'</b></div>';
+      if(it.body) h+='<div class="note" style="margin-top:5px">'+esc(it.body)+'</div>';
+      if(it.numbers) h+='<div style="margin-top:5px;font-family:ui-monospace,Menlo,Consolas,monospace;'
+        +'font-size:13px;color:#e8eef7;overflow-wrap:anywhere">'+esc(it.numbers)+'</div>';
+      if(it.action) h+='<div class="note" style="margin-top:5px;color:'+c+'">→ '+esc(it.action)+'</div>';
       h+='</div>';
     });
-    h+='</div>';
+    if(v.todo&&v.todo.length){
+      h+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)">';
+      h+='<b style="font-size:13px">接下来要做的事</b>';
+      v.todo.forEach(function(t,i){
+        h+='<div style="margin-top:7px"><b>'+(i+1)+'. '+esc(t.what||'')+'</b>';
+        if(t.why) h+='<div class="note" style="margin-top:2px">为什么：'+esc(t.why)+'</div>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
   }
-  if(v.disclaimer) h+='<div class="note" style="margin-top:12px;opacity:.6;font-size:11px">'+esc(v.disclaimer)+'</div>';
+  h+=qh;
+  if(hasV&&v.disclaimer) h+='<div class="note" style="margin-top:12px;opacity:.6;font-size:11px">'+esc(v.disclaimer)+'</div>';
   h+='</div>';
   return h;
 }

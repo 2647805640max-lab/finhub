@@ -46,6 +46,13 @@ class FinHubUiV6Smoke(unittest.TestCase):
         self.assertIn(".actionbar-structured", self.css)
         self.assertIn("grid-template-columns:minmax(0,1fr)", self.css)
 
+    def test_unverified_or_stale_decisions_fail_closed(self):
+        for marker in ("decisionIntegrityFor", "gate.status!=='PASS'",
+                       "gate.canRecommend!==true", "age>1.5",
+                       "BLOCK · 不可决策", "当前不提供 HOLD / ADD / TRIM / EXIT 建议",
+                       "完整性阻断"):
+            self.assertIn(marker, self.index)
+
     def test_theme_is_scoped_and_does_not_hide_data_by_default(self):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)

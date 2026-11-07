@@ -195,3 +195,55 @@ body.fh-v6 .lock,body.fh-v6 .xcard{border-color:rgba(137,164,198,.16)}
     animation-iteration-count:1!important;transition-duration:.01ms!important;
   }
 }
+
+/* Standalone governance board entry point shares the same visual language. */
+body.fh-v6:not(:has(#page-gov))>header{
+  max-width:1440px;margin:0 auto;padding:18px clamp(14px,2.4vw,34px) 12px;
+  background:rgba(9,14,22,.88);border-bottom:1px solid rgba(137,164,198,.13);
+  box-shadow:none;backdrop-filter:blur(18px);
+}
+body.fh-v6:not(:has(#page-gov))>header h1{font-size:clamp(22px,2.5vw,30px);letter-spacing:-.035em}
+body.fh-v6:not(:has(#page-gov))>nav{
+  position:sticky;top:0;z-index:90;max-width:1440px;margin:0 auto 15px;padding:8px clamp(14px,2.4vw,34px);
+  gap:7px;background:rgba(13,21,32,.94);border-bottom:1px solid rgba(137,164,198,.13);
+  backdrop-filter:blur(16px);
+}
+body.fh-v6:not(:has(#page-gov))>nav button{
+  min-height:39px;padding:0 14px;border:1px solid rgba(137,164,198,.14);
+  border-radius:10px;background:rgba(17,26,39,.86);color:var(--dim);font-weight:650;
+}
+body.fh-v6:not(:has(#page-gov))>nav button.on{
+  color:#eef5ff;background:rgba(105,151,222,.2);border-color:rgba(131,173,255,.32);
+}
+body.fh-v6:not(:has(#page-gov))>main{
+  max-width:1440px;margin:0 auto;padding:8px clamp(14px,2.4vw,34px) 30px;
+}
+body.fh-v6:not(:has(#page-gov))>main>section{
+  display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px;align-items:start;
+}
+body.fh-v6:not(:has(#page-gov))>main>section>.card{
+  grid-column:span 6;margin:0;padding:17px;border-radius:15px;
+  border:1px solid rgba(137,164,198,.15);
+  background:linear-gradient(145deg,rgba(19,30,45,.98),rgba(15,24,36,.98));
+}
+body.fh-v6:not(:has(#page-gov))>main>section>.card:first-child{grid-column:span 12}
+body.fh-v6:not(:has(#page-gov))>main>section .card h2{
+  color:#d4e1f2;font-size:14px;padding-bottom:9px;border-bottom:1px solid rgba(137,164,198,.12);
+}
+body.fh-v6:not(:has(#page-gov))>footer{
+  background:rgba(9,14,22,.94);border-color:rgba(137,164,198,.16);backdrop-filter:blur(14px);
+}
+@media(max-width:767px){
+  body.fh-v6:not(:has(#page-gov)){padding-bottom:calc(76px + var(--safe-b))}
+  body.fh-v6:not(:has(#page-gov))>header{padding:calc(12px + var(--safe-t)) 14px 10px}
+  body.fh-v6:not(:has(#page-gov))>nav{
+    flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:7px 12px;
+  }
+  body.fh-v6:not(:has(#page-gov))>nav::-webkit-scrollbar{display:none}
+  body.fh-v6:not(:has(#page-gov))>nav button{flex:0 0 auto}
+  body.fh-v6:not(:has(#page-gov))>main{padding:8px 12px 20px}
+  body.fh-v6:not(:has(#page-gov))>main>section{grid-template-columns:minmax(0,1fr)}
+  body.fh-v6:not(:has(#page-gov))>main>section>.card,
+  body.fh-v6:not(:has(#page-gov))>main>section>.card:first-child{grid-column:1/-1;padding:14px}
+  body.fh-v6:not(:has(#page-gov))>footer{position:static;margin-top:12px}
+}

@@ -1405,21 +1405,32 @@ function renderActionBar(){
   var act=rb.action||'';
   var actCN={ADD:'加仓',TRIM:'减仓',EXIT:'撤离',WAIT:'观望'}[act]||act;
   var inBand=rb.inBand===true;
-  var txt;
+  var summary;
   if(gap>0.05){
-    txt='今日行动：'+actCN+' · 当前敞口 '+cur+'% → 硬顶 '+hard+'% → **需降 '+gap+' 个百分点**';
-    el.className='freshbar warn';
+    summary='今日行动：'+actCN+' · 当前敞口 '+cur+'% → 硬顶 '+hard+'% → 需降 '+gap+' 个百分点';
+    el.className='freshbar warn actionbar-structured';
   }else{
-    txt='今日行动：'+actCN+' · 当前敞口 '+cur+'% 在硬顶 '+hard+'% 内'+(inBand?'（目标区间内）':'');
-    el.className='freshbar ok';
+    summary='今日行动：'+actCN+' · 当前敞口 '+cur+'% 在硬顶 '+hard+'% 内'+(inBand?'（目标区间内）':'');
+    el.className='freshbar ok actionbar-structured';
   }
-  // P0-5 触发证据：把孤立分数接上因果（取前 2 条证据）
+  /* Keep the original decision and evidence unchanged; only expose them as
+     separate readable regions. textContent avoids interpreting evidence as HTML. */
+  el.replaceChildren();
+  var main=document.createElement('div');
+  main.className='action-summary';
+  main.textContent=summary;
+  el.appendChild(main);
   if(ev.length){
-    var two=ev.slice(0,2).map(function(x){ return String(x).replace(/^\[[^\]]+\]\s*/,''); });
-    txt+='　· 触发：'+two.join('　/　');
+    var evidence=document.createElement('div');
+    evidence.className='action-evidence';
+    ev.slice(0,2).forEach(function(x,i){
+      var item=document.createElement('span');
+      item.className='action-evidence-item';
+      item.textContent=String(x).replace(/^\[[^\]]+\]\s*/,'');
+      evidence.appendChild(item);
+    });
+    el.appendChild(evidence);
   }
-  el.innerHTML='';
-  el.appendChild(document.createTextNode(txt));
   el.hidden=false;
 }
 

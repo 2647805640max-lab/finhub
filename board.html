@@ -463,14 +463,14 @@ function renderToday(d){
   const p = td.position, rb = td.rebalance || {};
   const integrity = decisionIntegrityFor(d,p);
   const safeAction = integrity.blocked ? 'BLOCK · 不可决策' : (rb.action||'—');
+  const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
+  let h = '';
   if(integrity.blocked){
     const why=esc(integrity.reasons.join('；'));
     // Keep the block visible before any portfolio numbers or rebalance labels.
     // It is a system refusal, never a HOLD recommendation.
     h = card('⛔ 决策完整性阻断','BLOCK','<div class="bad">当前不提供 HOLD / ADD / TRIM / EXIT 建议。</div><div class="note mt2">'+why+'</div>');
   }
-  const dev = (p.currentPct!=null && p.hardMaxPct!=null) ? (p.currentPct - p.hardMaxPct) : null;
-  let h = '';
   // 顶部双口径区（F-22）：信号卡口径在前、台账口径在后；两口径数值不同是预期，互不覆盖。
   let dual = '';
   if (td.live) {

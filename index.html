@@ -472,6 +472,32 @@ details.unk{margin:8px 0 2px;padding:6px 8px;border:1px solid var(--line);border
 details.unk summary{cursor:pointer;font-size:12px;color:var(--warn);outline:none}
 details.unk .unklist{margin-top:6px;font-size:11.5px;line-height:1.55;color:var(--dim)}
 details.unk .unklist b{color:var(--txt)}
+/* ───── v5 信息分层（2026-11-07 重构）──────────────────────────
+   屏1 决策条（粘性，含 4 个状态灯）→ 屏2 为什么 → 屏3 市场 / 我的
+   只改布局与分组，不动任何数据口径。 */
+#v5top{position:sticky;z-index:80;background:var(--bg,#0d1117);
+  padding:4px 0 2px;margin:0 0 6px}
+#v5pills{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}
+#v5pills .pill{font-size:var(--fs-sm);padding:2px 9px;border-radius:999px;
+  border:1px solid var(--line);color:#9aa7b6;white-space:nowrap;line-height:1.6}
+#v5pills .pill.ok{border-color:#1d4b3a;color:#3ddc97}
+#v5pills .pill.warn{border-color:#4b3d1d;color:#ffb340}
+#v5pills .pill.bad{border-color:#4b1d1d;color:#ff5c5c}
+#v5tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  margin:0 0 10px;padding:2px 0 4px;position:sticky;z-index:79;
+  background:var(--bg,#0d1117);scrollbar-width:none}
+#v5tabs::-webkit-scrollbar{display:none}
+#v5tabs button{flex:0 0 auto;font-size:var(--fs-md);padding:7px 15px;border-radius:999px;
+  border:1px solid var(--line);background:var(--card);color:#9aa7b6;cursor:pointer}
+#v5tabs button.on{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:700}
+#v5tabs button[hidden]{display:none}
+#app.v5app{display:block}
+.v5group{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-3);margin:0 0 var(--sp-3)}
+@media(min-width:768px){.v5group{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1025px){.v5group{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* tab 内不再折叠：分层已经替代了「显示更多」 */
+#app .v5group .card.tier2,#app .v5group .xcard.tier2{display:block}
+#t2bar{display:none}
 </style>
 </head>
 <body>
@@ -2723,6 +2749,200 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
   setTimeout(tickAgeLabel, 2500);
   setTimeout(tickAgeLabel, 6000);
   window.addEventListener('online', refreshNow);
+})();
+</script>
+<script>
+/* ═══ v5 信息分层 ═══════════════════════════════════════════════
+   卡片仍由 render() 生成，这一层只负责「按标题归组 + 搬家」，
+   不改任何数据计算。分组规则集中在 V5.map，新增卡片只需加一行。
+   日期：2026-11-07 */
+(function(){
+  var V5 = {
+    order:['concl','why','mkt','mine','more'],
+    label:{concl:'结论',why:'为什么',mkt:'市场',mine:'我的',more:'更多'},
+    /* 标题前缀 → 分组（长前缀优先，顺序即优先级） */
+    map:[
+      ['现在什么情况','concl'],['今日信号卡','concl'],['我的持仓','concl'],
+      ['个人层','concl'],['纪律','concl'],
+      ['大盘裁决','why'],['因子分层','why'],['三因子','why'],['F2 ','why'],['F3 ','why'],
+      ['盘中观测','why'],['相关层','why'],['数据新鲜度','why'],['已知不可知','why'],
+      ['四大指数','mkt'],['持仓板块','mkt'],['海外宏观','mkt'],['国家队','mkt'],['突发','mkt'],
+      ['通知','mine'],['链式推演','mine'],['告警','mine'],['每日新闻','mkt']
+    ],
+    group:function(t){
+      var s=String(t||'').replace(/\s+/g,' ').trim();
+      for(var i=0;i<V5.map.length;i++){ if(s.indexOf(V5.map[i][0])===0) return V5.map[i][1]; }
+      return 'more';
+    }
+  };
+  var cur='concl', busy=false, boxes={};
+
+  function boot(){
+    var live=document.getElementById('page-live');
+    if(!live) return false;
+    if(!document.getElementById('v5top')){
+      var top=document.createElement('div'); top.id='v5top';
+      top.innerHTML='<div id="v5pills"></div>';
+      live.insertBefore(top, live.firstChild);
+      ['actionbar','devbar','notifbar'].forEach(function(id){
+        var el=document.getElementById(id); if(el) top.appendChild(el);
+      });
+      var tabs=document.createElement('nav'); tabs.id='v5tabs';
+      V5.order.forEach(function(g){
+        var b=document.createElement('button');
+        b.type='button'; b.dataset.g=g; b.textContent=V5.label[g];
+        b.onclick=function(){ show(g); };
+        tabs.appendChild(b);
+      });
+      live.insertBefore(tabs, top.nextSibling);
+    }
+    stick();
+    return true;
+  }
+
+  /* 粘性偏移运行时量取，避免写死 header / modebar 高度 */
+  function stick(){
+    var h=0, m=0;
+    var hd=document.querySelector('header'); if(hd) h=hd.offsetHeight;
+    var mb=document.getElementById('modebar'); if(mb) m=mb.offsetHeight;
+    var top=document.getElementById('v5top');
+    var tabs=document.getElementById('v5tabs');
+    if(top) top.style.top=(h+m)+'px';
+    if(tabs && top) tabs.style.top=(h+m+top.offsetHeight)+'px';
+  }
+
+  function show(g){
+    cur=g;
+    V5.order.forEach(function(k){ if(boxes[k]) boxes[k].hidden=(k!==g); });
+    var tabs=document.getElementById('v5tabs');
+    if(tabs) [].forEach.call(tabs.children,function(b){ b.classList.toggle('on', b.dataset.g===g); });
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
+  }
+
+  function isCard(el){
+    return !!(el && el.classList && (el.classList.contains('card')||el.classList.contains('xcard')));
+  }
+
+  function regroup(){
+    var app=document.getElementById('app'); if(!app) return;
+    busy=true;
+    try{
+      app.classList.add('v5app');
+      /* 复用已有的组壳（幂等）：只补缺失的，不推倒重建，避免卡片在重建过程中被搬空 */
+      boxes={};
+      [].forEach.call(app.querySelectorAll(':scope > .v5group'), function(d){
+        boxes[d.dataset.g]=d;
+      });
+      V5.order.forEach(function(g){
+        if(!boxes[g]){
+          var d=document.createElement('div');
+          d.className='v5group'; d.dataset.g=g; d.hidden=(g!==cur);
+          app.appendChild(d); boxes[g]=d;
+        }
+      });
+      /* 只搬「还在顶层」的卡片；已在组里的不动 */
+      var strays=[].filter.call(app.children, isCard);
+      var count={};
+      V5.order.forEach(function(g){ count[g]=boxes[g].children.length; });
+      strays.forEach(function(c){
+        var h=c.querySelector('h2,h3');
+        var g=V5.group(h?h.textContent:'');
+        boxes[g].appendChild(c);
+        count[g]=(count[g]||0)+1;
+      });
+      /* 偏差条不属于「第一屏动作」，沉到结论组顶部：点一下就能看全 */
+      var db=document.getElementById('devbar');
+      if(db && boxes.concl && db.parentNode!==boxes.concl) boxes.concl.insertBefore(db, boxes.concl.firstChild);
+      var tabs=document.getElementById('v5tabs');
+      if(tabs) [].forEach.call(tabs.children,function(b){
+        var n=count[b.dataset.g]||0;
+        b.hidden=(n===0);
+        var lab=V5.label[b.dataset.g];
+        b.textContent=n?(lab+' '+n):lab;
+      });
+      /* 「更多」只是兜底桶：结论组有货时不该停在它上面 */
+      if(!count[cur] || (cur==='more' && count.concl)){
+        var f=V5.order.filter(function(g){return count[g];})[0];
+        show(f||cur);
+      } else {
+        V5.order.forEach(function(k){ if(boxes[k]) boxes[k].hidden=(k!==cur); });
+      }
+    }catch(e){
+      if(window.console) console.warn('[FinHub v5] regroup 失败：', e && e.message);
+    }finally{
+      busy=false;
+    }
+  }
+
+  function fmtAge(ms){
+    if(ms==null||ms<0) return null;
+    var m=Math.round(ms/60000);
+    if(m<1) return '刚刚';
+    if(m<60) return m+'分';
+    var h=Math.round(m/60);
+    if(h<24) return h+'小时';
+    return Math.round(h/24)+'天';
+  }
+  function ts2ms(v){
+    if(v==null) return null;
+    if(typeof v==='number') return v>1e12?v:v*1000;
+    var s=String(v).trim();
+    var p=new Date(s.replace(' ','T').replace(/[+-]\d{2}:\d{2}$/,''));
+    return (p&&!isNaN(p.getTime()))?p.getTime():null;
+  }
+
+  /* 状态灯：行情 / 持仓 / 偏差 / 治理 —— 四个「我现在能不能信」的问题 */
+  function pills(){
+    var box=document.getElementById('v5pills'); if(!box) return;
+    var s=window.__stateData||{}, b=(window.__extrasData||window.__boardData)||null;
+    var out=[];
+    var mk=function(txt,cls){ out.push('<span class="pill '+(cls||'')+'">'+txt+'</span>'); };
+
+    var inS=!(s.freshness&&s.freshness.inSession===false);
+    var a=fmtAge(ts2ms(s.generatedAt)?Date.now()-ts2ms(s.generatedAt):null);
+    if(a==null) mk('行情 未取得','warn');
+    else if(!inS) mk('行情 收盘','');
+    else mk('行情 '+a+'前', (Date.now()-ts2ms(s.generatedAt))>45*60000?'warn':'ok');
+
+    if(b){
+      var pos=(b.today&&b.today.position)||{};
+      var pm=ts2ms(pos.dataAsOf||pos.asOf);
+      var pd=(pos.dataAgeDays!=null)?Number(pos.dataAgeDays):(pm!=null?(Date.now()-pm)/86400000:null);
+      if(pd!=null && !isNaN(pd)){
+        var pl=pd<1?(Math.round(pd*24)+'小时前'):(Math.round(pd)+'天前');
+        mk('持仓 '+pl, pd>2?'warn':'ok');
+      }
+      var devs=((b.chain||{}).knownDeviations||[]).filter(function(d){
+        var sv=String(d.severity||'').toLowerCase();
+        return (sv==='high'||sv==='medium')&&String(d.status||'').indexOf('未执行')>=0;
+      });
+      var unres=(((b.ips||{}).items)||[]).filter(function(x){ return x.status==='warn'||x.status==='gap'; });
+      if(devs.length) mk('未执行偏差 '+devs.length,'bad');
+      if(unres.length) mk('口径未决 '+unres.length,'warn');
+      var gm=ts2ms(b.generatedAt);
+      if(gm!=null){ var ga=fmtAge(Date.now()-gm); mk('治理 '+(ga||'—')+'前', (Date.now()-gm)>8*3600*1000?'warn':''); }
+    }
+    box.innerHTML=out.join('');
+    box.hidden=(out.length===0);
+  }
+
+  function tick(){
+    try{ boot(); }catch(e){}
+    try{
+      var app=document.getElementById('app');
+      if(app && !busy && [].some.call(app.children,function(el){
+        return el.classList && (el.classList.contains('card')||el.classList.contains('xcard'));
+      })) regroup();
+    }catch(e){}
+    try{ pills(); }catch(e){}
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', tick);
+  } else { tick(); }
+  setInterval(tick, 2000);
+  window.addEventListener('resize', function(){ try{ stick(); }catch(e){} });
+  window.addEventListener('hashchange', function(){ try{ stick(); }catch(e){} });
 })();
 </script>
 </body>

@@ -1354,9 +1354,33 @@ function stateData(){ return window.__stateData || null; }
 /* Fail closed: a visual freshness badge is not proof that a decision is safe.
    The publisher must supply an explicit PASS from the upstream integrity gate;
    the public position snapshot must also be no older than 36 hours. */
+/* ── D9（2026-11-08）：离线缓存的 board 一律按时效不可确认处理 ──────────────
+   背景：fetchBoard() 在两个数据源都失败时会回退到 localStorage / Service Worker
+   缓存。缓存里那份 board 可能是几小时前的，它的 decisionIntegrity 当时是 PASS。
+   旧实现只用一个「离线模式」横幅提示，**不影响** C 的 PASS/BLOCK 结论 ——
+   于是断网 23 小时期间，页面一直显示金额与执行单，而数据其实是 23 小时前的。
+
+   修法：只要数据来自缓存，就按「时效不可确认」阻断。理由是缓存没有可信的
+   「我有多旧」——localStorage 里那条是上次成功写入的时间，不是数据的采集时间。
+   要恢复展示，只能刷新拿到新数据。 */
+window.__boardFromCache = false;
+
+/* ── D7（2026-11-08）：时效阈值 —— 单一真相源是 contracts/thresholds.json ──
+   这个对象由 CI 校验与 contracts/thresholds.json 逐项相等
+   （tests/ui-thresholds-parity.py）。改了这里而不改 JSON（或反之）CI 会红。
+   不要在别处再写一份数字。 */
+const GATE_THRESHOLDS = Object.freeze({
+  verdictMaxAgeHours: 24,          // 完整性裁定最大年龄（小时）
+  positionMaxAgeDays: 1.5,         // 持仓快照最大年龄（天）= 36 小时
+  futureClockSkewMinutes: 5        // 未来时钟容差（分钟）
+});
+
 function decisionIntegrityFor(board, position){
   var gate=(board&&(board.decisionIntegrity||(board.today&&board.today.decisionIntegrity)))||null;
   var reasons=[];
+  if(window.__boardFromCache){
+    reasons.push('数据来自离线缓存，时效不可确认（需联网刷新后才能决策）');
+  }
   if(!gate || gate.status!=='PASS' || gate.canRecommend!==true){
     reasons.push(gate ? (gate.message||'上游完整性闸门未通过') : '上游未提供决策完整性 PASS');
   }
@@ -1364,8 +1388,8 @@ function decisionIntegrityFor(board, position){
   if(!Number.isFinite(gateStamp)) reasons.push('完整性审计时点缺失');
   else {
     var gateAgeMs=Date.now()-gateStamp;
-    if(gateAgeMs>24*60*60*1000) reasons.push('完整性审计结果超过24小时');
-    if(gateAgeMs< -5*60*1000) reasons.push('完整性审计时点位于未来');
+    if(gateAgeMs>GATE_THRESHOLDS.verdictMaxAgeHours*60*60*1000) reasons.push('完整性审计结果超过'+GATE_THRESHOLDS.verdictMaxAgeHours+'小时');
+    if(gateAgeMs< -GATE_THRESHOLDS.futureClockSkewMinutes*60*1000) reasons.push('完整性审计时点位于未来');
   }
   var age=position&&position.dataAgeDays!=null?Number(position.dataAgeDays):NaN;
   if(!Number.isFinite(age) && position && position.dataAsOf){
@@ -1373,7 +1397,7 @@ function decisionIntegrityFor(board, position){
     if(Number.isFinite(stamp)) age=(Date.now()-stamp)/86400000;
   }
   if(!Number.isFinite(age)) reasons.push('持仓快照年龄缺失');
-  else if(age>1.5) reasons.push('持仓快照超过36小时（'+age.toFixed(2)+'天）');
+  else if(age>GATE_THRESHOLDS.positionMaxAgeDays) reasons.push('持仓快照超过'+Math.round(GATE_THRESHOLDS.positionMaxAgeDays*24)+'小时（'+age.toFixed(2)+'天）');
   if(position&&position.stale===true) reasons.push('上游已标记持仓快照过期');
   return {blocked:reasons.length>0,status:reasons.length?'BLOCK':'PASS',reasons:reasons};
 }
@@ -2409,6 +2433,10 @@ async function load(){
       return;
     }
     const d = got.d;
+    // D9：把「这份数据是不是缓存来的」告诉完整性闸门。
+    // 缓存里的 board 可能几小时前就是 PASS，但缓存没有可信的新鲜度凭据，
+    // 所以一旦来自缓存，一律按时效不可确认阻断。
+    window.__boardFromCache = !!got.fromCache;
     govQuery('#govVer').textContent = d.schema || 'board/v1';
     const srcLabel = got.fromCache ? ('离线缓存 · ' + got.src) : got.src;
     govQuery('#govGen').textContent = '生成于 ' + (d.generatedAt || '未知') + '　·　数据源：' + srcLabel;

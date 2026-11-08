@@ -33,6 +33,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -85,6 +86,22 @@ def extract_function(source, name):
     if i >= n or source[i] != "{":
         raise LookupError("no function body for %s" % name)
     return source[m.start():_match_brace(source, i) + 1]
+
+
+def extract_const(source, name):
+    """Extract `const <name> = Object.freeze({...});` from the shipped source.
+
+    2026-11-08 D7 起，页面的时效阈值收敛成 GATE_THRESHOLDS 一个常量对象，
+    唯一真源是 contracts/thresholds.json（CI 用 ui-thresholds-parity.py 校验）。
+    测试仍然跑**出货源码**，所以这个常量也必须从出货源码里取，不能手抄一份。
+    """
+    m = re.search(r"\bconst\s+" + re.escape(name) + r"\s*=\s*Object\.freeze\s*\(\s*\{", source)
+    if not m:
+        return None
+    brace = source.index("{", m.end() - 1)
+    end = _match_brace(source, brace)
+    tail = source.find(";", end)
+    return source[m.start(): (tail + 1) if tail != -1 else end + 1]
 
 
 def _match_brace(source, start):
@@ -210,6 +227,11 @@ function fixtures(){
     stale:   {board:board('PASS', true, 'PASS',
                           {currentPct:10.71, hardMaxPct:15, dataAgeDays:3.2}),
               holdings:holdings, daily_signal:daily_signal, state:state},
+    // D9（2026-11-08）：离线缓存场景 —— board 本身是 PASS 且很新鲜，
+    // 但它来自缓存（fetchBoard 回退到 localStorage / SW）。缓存没有可信的
+    // 「我有多旧」，所以必须按时效不可确认阻断。
+    cached:  {board:board('PASS', true, 'PASS', freshPos), fromCache:true,
+              holdings:holdings, daily_signal:daily_signal, state:state},
     noboard: {board:null, holdings:holdings, daily_signal:daily_signal, state:state}
   };
 }
@@ -219,6 +241,7 @@ function safe(fn){
 }
 var fx = fixtures()[process.argv[2]];
 __board = fx.board;
+window.__boardFromCache = !!fx.fromCache;
 __trim = {};
 var out = {
   trim:     safe(function(){ return renderTrimPlan(fx.holdings, fx.state); }),
@@ -254,7 +277,19 @@ class DecisionIntegrityBehaviour(unittest.TestCase):
         cls.found = found
         cls._cache = {}
         cls._tmpdir = tempfile.mkdtemp(prefix="finhub-integrity-")
-        harness = STUBS + "\n\n" + "\n\n".join(found[n] for n in EXTRACT_NAMES if n in found) \
+        # D7：阈值常量也必须来自出货源码（唯一真源 contracts/thresholds.json）
+        consts = []
+        for source in scripts:
+            c = extract_const(source, "GATE_THRESHOLDS")
+            if c:
+                consts.append(c)
+                break
+        if not consts:
+            raise AssertionError(
+                "index.html is missing GATE_THRESHOLDS constant; cannot test integrity behaviour")
+        cls.consts = consts
+        harness = STUBS + "\n\n" + "\n\n".join(consts) \
+            + "\n\n" + "\n\n".join(found[n] for n in EXTRACT_NAMES if n in found) \
             + "\n\n" + FIXTURES
         cls.harness = Path(cls._tmpdir) / "harness.js"
         cls.harness.write_text(harness, encoding="utf-8")
@@ -324,6 +359,23 @@ class DecisionIntegrityBehaviour(unittest.TestCase):
                          "pass trim plan must publish window.__trimNeed for the checkbox footer")
         self.assertNoRendererErrors(out, "pass")
 
+    def test_offline_cache_blocks_even_when_gate_says_pass(self):
+        """D9（2026-11-08）：缓存里的旧 PASS 必须按时效不可确认阻断。
+
+        旧实现只挂一条「离线模式」横幅，不影响 C 的 PASS/BLOCK 结论 ——
+        于是断网期间页面一直显示金额与执行单，而数据其实是若干小时前的。
+        """
+        out = self._scene("cached")
+        self.assertNoMoney(out, "cached")
+        self.assertIn("阻断", out["holdings"], out["holdings"])
+        self.assertIn("阻断", out["daily"], out["daily"])
+        self.assertIn("阻断", out["trim"], out["trim"])
+        self.assertIn("缓存", self._combined(out),
+                      "阻断原因必须点名「缓存」，否则用户无法判断为什么被挡")
+        self.assertEqual(out["trimNeedSet"], "unset",
+                         "cached trim plan must not publish window.__trimNeed")
+        self.assertNoRendererErrors(out, "cached")
+
     def test_stale_snapshot_blocks_even_when_gate_says_pass(self):
         out = self._scene("stale")
         self.assertNoMoney(out, "stale")
@@ -381,21 +433,71 @@ class FinHubUiV6Smoke(unittest.TestCase):
         self.assertIn("grid-template-columns:minmax(0,1fr)", self.css)
 
     def test_unverified_or_stale_decisions_fail_closed(self):
+        # D7（2026-11-08）：时效阈值已从内联字面量收敛到 GATE_THRESHOLDS 常量
+        # （唯一真源 contracts/thresholds.json，由 tests/ui-thresholds-parity.py 校验）。
+        # 这里断言的是「判定逻辑还在」——查常量名与比较式，而不是查旧字面量。
         for marker in ("decisionIntegrityFor", "gate.status!=='PASS'",
-                       "gate.canRecommend!==true", "gate.checkedAt", "24*60*60*1000", "age>1.5",
+                       "gate.canRecommend!==true", "gate.checkedAt",
+                       "GATE_THRESHOLDS.verdictMaxAgeHours",
+                       "GATE_THRESHOLDS.positionMaxAgeDays",
                        "BLOCK · 不可决策", "当前不提供 HOLD / ADD / TRIM / EXIT 建议",
                        "完整性阻断", "不可判定（完整性阻断）", "完整性阻断，不展示旧金额",
                        "决策完整性未通过", "最近快照风险仓位"):
             self.assertIn(marker, self.index)
-        for marker in ("decisionIntegrityFor", "age>1.5", "gate.checkedAt",
+        for marker in ("decisionIntegrityFor", "GATE_THRESHOLDS.positionMaxAgeDays",
+                       "gate.checkedAt",
                        "BLOCK · 不可决策", "完整性阻断",
                        "不可判定（完整性阻断）", "完整性阻断，不展示旧金额"):
             self.assertIn(marker, self.board)
+
+    def test_offline_cache_blocks_even_when_gate_says_pass(self):
+        """D9（2026-11-08）：离线缓存里的旧 PASS 必须按时效不可确认阻断。
+
+        旧实现只挂一条「离线模式」横幅，不影响 C 的 PASS/BLOCK 结论 ——
+        于是断网期间页面一直显示金额与执行单，而数据其实是若干小时前的。
+        """
+        for marker in ("__boardFromCache", "数据来自离线缓存"):
+            self.assertIn(marker, self.index,
+                          "index.html 缺少离线缓存阻断逻辑标记 %r" % marker)
+
 
     def test_theme_is_scoped_and_does_not_hide_data_by_default(self):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)
         self.assertIn('overflow-x:auto', self.css)
+
+
+class ThresholdParityTests(unittest.TestCase):
+    """D7（2026-11-08）：页面里的时效阈值必须与 contracts/thresholds.json 一致。
+
+    放在这里而不是独立文件，是因为 CI 的 path filter 只覆盖 tests/ui-v6-smoke.py
+    （.github/workflows/*.yml 改不了 —— OAuth token 没有 workflow scope）。
+    独立成文件就会「写了但永远不跑」，那是最坏的假成功。
+    """
+
+    def test_page_thresholds_match_contracts_json(self):
+        script = ROOT / "tests" / "ui-thresholds-parity.py"
+        self.assertTrue(script.exists(), "缺少 %s" % script)
+        proc = subprocess.run([sys.executable, str(script)],
+                              capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(proc.returncode, 0,
+                         "页面阈值与 contracts/thresholds.json 不一致:\n%s\n%s"
+                         % (proc.stdout, proc.stderr))
+
+    def test_contracts_thresholds_json_exists_and_parses(self):
+        path = ROOT / "contracts" / "thresholds.json"
+        self.assertTrue(path.exists(), "缺少 %s（时效阈值的唯一真源）" % path)
+        data = json.loads(path.read_text(encoding="utf-8"))
+        # 数值钉死：这些是用户定的时效标准，任何改动都必须显式改 JSON 并走复核
+        self.assertEqual(data["holdingsMaxAgeHours"], 36.0)
+        self.assertEqual(data["marketMaxAgeDays"], 4.0)
+        self.assertEqual(data["futureClockSkewMinutes"], 5.0)
+        self.assertEqual(data["boardMaxAgeHours"], 24.0)
+        self.assertEqual(data["verdictMaxAgeHours"], 24.0)
+        self.assertEqual(data["positionMaxAgeDays"], 1.5)
+        self.assertEqual(data["hardMaxRiskyPct"], 15.0)
+        self.assertEqual(data["requiredIndices"],
+                         ["sh000001", "sh000300", "sz399001", "sz399006"])
 
 
 if __name__ == "__main__":

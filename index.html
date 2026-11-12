@@ -1798,6 +1798,33 @@ function renderQisBlock(q){
         +(a.scoreDiscriminating?'分数可区分':'分数不可区分（标的数不足）');
   }
   h+='<div class="note" style="margin-top:8px">'+esc(line)+'</div>';
+  /* ── 2026-11-12：把「因子退化」显式画出来 ────────────────────────────────
+     背景（2026-11-11 实测，登记见 contracts/qis-source.json）：
+       生产风险池只有 4 只标的。当日 momentum / −vol / smaDev 的**横截面秩序完全相同**
+       （三对 Spearman ρ = 1.0000，5 组权重只产生 1 种排序）⇒ 加权分 ≡ 单因子，
+       登记的 0.5/0.2/0.3 权重**对排序零影响**。
+     为什么这段必须存在：
+       产物层（tools/qis-factors.py → board.json 的 qis 段）已经把它写成
+       status=constrained + touched + diagnostics.effectiveFactorCount，
+       但**本页面此前一个字段都没读**（diagnostics 在全文出现 0 次）⇒ 用户看到的是
+       一张干净的「分数可区分 / 研究权重 5%·5%·3.75%·1.25%」的表，
+       而权重其实对排序毫无影响 —— 这就是本轮要消灭的「静默失效」。
+     宁可丑，不可骗。 */
+  var dg=q.diagnostics||{}, bl=dg.blend||{};
+  var eff=(dg.effectiveFactorCount||{}).effective_factor_count;
+  var touched=q.touched||[];
+  if(bl.weights_have_effect===false || touched.length){
+    var msgs=[];
+    if(bl.weights_have_effect===false){
+      msgs.push('本次截面 '+(bl.rank_identical_to||[]).length+' 个因子秩完全相同'
+        +' ⇒ 加权分 ≡ 单因子，登记权重对排序零影响'
+        +(eff!=null?('（有效独立因子数 '+eff+'）'):''));
+    }
+    if(touched.length) msgs.push('约束：'+touched.join('；'));
+    h+='<div class="note" style="margin-top:8px;color:#ff5c5c;border:1px solid rgba(255,92,92,.45);'
+      +'border-radius:6px;padding:6px 8px;background:rgba(255,92,92,.08)">'
+      +'⚠ '+esc(msgs.join(' ｜ '))+'</div>';
+  }
   if(q.caliber_note) h+='<div class="note" style="margin-top:3px;opacity:.7">'+esc(q.caliber_note)+'</div>';
   h+='</div>';
   return h;

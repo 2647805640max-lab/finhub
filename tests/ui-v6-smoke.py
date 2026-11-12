@@ -252,6 +252,64 @@ var out = {
 process.stdout.write(JSON.stringify(out));
 """
 
+# esc 的等价 stub（出货源码里的那个抠不出来，原因见 QisDegeneracyBehaviour.setUpClass）
+QIS_ESC_STUB = r"""
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+"""
+
+# QIS 因子退化的两个场景（2026-11-12）。
+# 结构照抄生产产物 contracts/factors-qis.json 的 qis 段 —— 不是手编的形状，
+# 而是「产物里真有这些字段」的样子，所以测试才有意义。
+QIS_FIXTURES = r"""
+function qisScenes(){
+  function factors(){
+    return {
+      'sh510050':{name:'上证50ETF', momentum:-0.0334, vol:0.1002, smaDev:-0.0244,
+                  score:0.875, weight:0.05},
+      'sh510300':{name:'沪深300ETF', momentum:-0.1247, vol:0.1649, smaDev:-0.0660,
+                  score:0.625, weight:0.05},
+      'sh510500':{name:'中证500ETF', momentum:-0.1949, vol:0.3513, smaDev:-0.0841,
+                  score:0.375, weight:0.0375},
+      'sz159949':{name:'创业板50ETF', momentum:-0.3291, vol:0.5158, smaDev:-0.1908,
+                  score:0.125, weight:0.0125}
+    };
+  }
+  function allocation(){
+    return {weights:{sh510050:0.05, sh510300:0.05, sh510500:0.0375, sz159949:0.0125},
+            deployed:0.15, undeployed:0, riskBudget:0.15, maxAssetWeight:0.05,
+            minAssetsForFullBudget:3, capBinding:false, scoreDiscriminating:true,
+            shortfallReason:null};
+  }
+  var base = {asOf:'2026-11-11', nAssets:4, factors:factors(), allocation:allocation(),
+              caliber_note:'研究级读数，不是仓位依据'};
+  return {
+    // 2026-11-11 实测：4 只池上三个因子秩完全相同 ⇒ 加权 ≡ 单因子
+    degenerate: Object.assign({}, base, {
+      status:'constrained',
+      touched:['因子退化·权重对排序无影响'],
+      diagnostics:{
+        effectiveFactorCount:{effective_factor_count:1, unique_rank_vectors:1,
+                               participation_ratio:1.0, n_factors:3, n_assets:4},
+        blend:{weights_have_effect:false,
+               rank_identical_to:['momentum','negVol','smaDev'],
+               distinct_orderings:1}
+      }
+    }),
+    // 健康对照：有效独立因子数 3/3、权重真的改变排序
+    healthy: Object.assign({}, base, {
+      status:'ok', touched:[],
+      diagnostics:{
+        effectiveFactorCount:{effective_factor_count:3, unique_rank_vectors:3,
+                               participation_ratio:2.6, n_factors:3, n_assets:4},
+        blend:{weights_have_effect:true, rank_identical_to:null, distinct_orderings:4}
+      }
+    })
+  };
+}
+var scene = qisScenes()[process.argv[2]];
+process.stdout.write(JSON.stringify(renderQisBlock(scene)));
+"""
+
 
 class DecisionIntegrityBehaviour(unittest.TestCase):
     @classmethod
@@ -465,6 +523,98 @@ class FinHubUiV6Smoke(unittest.TestCase):
         self.assertIn('body.fh-v6', self.css)
         self.assertIn('[hidden]', self.index)
         self.assertIn('overflow-x:auto', self.css)
+
+
+class QisDegeneracyBehaviour(unittest.TestCase):
+    """QIS 因子退化必须在页面上**看得见**（2026-11-12）。
+
+    背景（2026-11-11 实测，登记在 contracts/qis-source.json）：
+      生产风险池只有 4 只标的；当日 momentum / −vol / smaDev 的横截面秩序完全相同
+      （三对 Spearman ρ = 1.0000，5 组权重只产生 1 种排序）⇒ 加权分 ≡ 单因子，
+      登记的 0.5/0.2/0.3 权重对排序**零影响**。
+      产物层已经把它写成 status=constrained + touched + diagnostics，
+      但**页面此前一个字段都没读**（diagnostics 在全文出现 0 次）⇒ 用户看到的是一张
+      干净的「分数可区分 / 研究权重 5%·5%·3.75%·1.25%」的表，而权重其实毫无作用。
+      这就是「静默失效」——静默失效比报错更严重，所以这里钉死它。
+
+    与既有 behavioural 套件同一套路：抠**出货源码**、在 node 里真跑、断言**渲染结果**，
+    而且**两个方向都断言**（退化必须报警；健康板不得误报），
+    防止「把功能删掉也算过」。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which("node") is None:
+            raise AssertionError("node executable is required to run the inline JS")
+        html = INDEX.read_text(encoding="utf-8")
+        scripts = inline_scripts(html)
+        found = {}
+        for name in ("esc", "renderQisBlock"):
+            for source in scripts:
+                try:
+                    found[name] = extract_function(source, name)
+                    break
+                except LookupError:
+                    continue
+        for required in ("renderQisBlock",):
+            if required not in found:
+                raise AssertionError(
+                    "index.html is missing function %s; cannot test QIS degeneracy display" % required)
+        cls.found = found
+        cls._tmpdir = tempfile.mkdtemp(prefix="finhub-qis-degen-")
+        cls.harness = Path(cls._tmpdir) / "harness.js"
+        # esc 不从出货源码抠：它的函数体里有正则字面量 /[&<>"]/g，其中的引号会让
+        # 本文件那个「跳过字符串」的括号扫描器失配（它不识别正则字面量）⇒
+        # 用等价的 stub，并**另加一条静态断言**钉住「页面里确实还定义着 esc」。
+        cls.harness.write_text(
+            QIS_ESC_STUB + "\n\n" + found["renderQisBlock"] + "\n\n" + QIS_FIXTURES,
+            encoding="utf-8")
+        check = subprocess.run(["node", "--check", str(cls.harness)],
+                               capture_output=True, text=True, encoding="utf-8")
+        if check.returncode != 0:
+            raise AssertionError("extracted QIS inline JS is not valid JS:\n" + check.stderr)
+
+    def _render(self, scene):
+        proc = subprocess.run(["node", str(self.harness), scene],
+                              capture_output=True, text=True, encoding="utf-8", timeout=60)
+        if proc.returncode != 0:
+            self.fail("node harness failed for scene %r (exit %d):\n%s\n%s"
+                      % (scene, proc.returncode, proc.stdout, proc.stderr))
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            self.fail("harness output for %r is not JSON: %s\n%r" % (scene, exc, proc.stdout))
+
+    def test_degenerate_cross_section_is_flagged(self):
+        out = self._render("degenerate")
+        self.assertIn("因子退化", out, "退化截面必须在页面上被点名")
+        self.assertIn("权重对排序零影响", out, "必须说清权重对排序零影响")
+        self.assertIn("有效独立因子数", out, "必须给出有效独立因子数")
+
+    def test_degenerate_still_renders_the_factors(self):
+        """不能靠「把因子表藏起来」来让测试变绿 —— 数字要照给，只是要带上告警。"""
+        out = self._render("degenerate")
+        for token in ("动量", "偏离", "研究口径"):
+            self.assertIn(token, out, "退化时仍必须渲染 %s（不许用隐藏功能代替告警）" % token)
+
+    def test_healthy_cross_section_does_not_raise_false_alarm(self):
+        out = self._render("healthy")
+        self.assertNotIn("因子退化", out, "健康截面不得误报退化")
+        self.assertIn("研究权重", out, "健康截面仍要显示研究权重")
+
+    def test_page_reads_the_diagnostics_fields(self):
+        """静态护栏：谁把诊断字段的读取删了，这条会红。"""
+        html = INDEX.read_text(encoding="utf-8")
+        for field in ("diagnostics", "weights_have_effect", "effectiveFactorCount",
+                      "rank_identical_to", "touched"):
+            self.assertIn(field, html,
+                          "index.html 不再引用 %s ⇒ 产物层的退化信号会被静默吞掉" % field)
+
+    def test_page_still_defines_esc(self):
+        """esc 用 stub 跑（见 setUpClass 的注释），所以这里静态钉住它还在。"""
+        html = INDEX.read_text(encoding="utf-8")
+        self.assertIn("function esc(", html,
+                      "index.html 不再定义 esc ⇒ 页面转义会坏，所有渲染都会出乱码")
 
 
 class ThresholdParityTests(unittest.TestCase):

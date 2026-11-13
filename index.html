@@ -1711,7 +1711,12 @@ const EXTRAS_SOURCES=[
   'https://raw.githubusercontent.com/2647805640max-lab/finhub-data/main/board.json',
   'data/board.json'
 ];
+var __extrasPending=null;
 async function loadExtras(){
+  /* 2026-11-12 并发去重：loadExtras 有 5 个调用点，开屏时会并发打多次
+     board.json（实测一次开屏 12 次请求），既浪费也放大被限流/降级的概率。 */
+  if(__extrasPending) return __extrasPending;
+  __extrasPending=(async function(){
   let b=null;
   for(const u of EXTRAS_SOURCES){
     try{ b=await jget(u+(u.indexOf('?')>=0?'&':'?')+'_='+Date.now()); break; }catch(e){}
@@ -1730,6 +1735,8 @@ async function loadExtras(){
      board 到达后必须重渲染一次，否则那份阻断会挂到下一次 60s 轮询（看起来像回归）。 */
   try{ var st=stateData(); if(st) render(st); }catch(e){}
   if(window.GOV) window.GOV.render(b);
+  })();
+  try{ return await __extrasPending; } finally { __extrasPending=null; }
 }
 /* 结论卡（2026-11-06）：数据来自 board.json 的 verdict 段。
    为什么放第一张：用户要的是「现在什么情况、结论是什么」，不是先看仪表。
@@ -1834,7 +1841,10 @@ function renderVerdict(b){
   var v=b&&b.verdict;
   var qh=renderQisBlock(b&&b.qis);
   var hasV=!!(v&&v.items&&v.items.length);
-  if(!hasV && !qh) return '';
+  /* 2026-11-12：QIS 块已独立成卡（见 renderExtras），这里不再内嵌。
+     原来 QIS 被塞在本卡内部，结论卡一旦不产出（board 缺 verdict 段），
+     QIS 读数和「因子退化」告警会一起消失——静默失效比报错更严重。 */
+  if(!hasV) return '';
   var col={bad:'#ff5c5c',watch:'#ffb340',good:'#3ddc97'};
   var lab={bad:'坏消息',watch:'要注意',good:'好消息'};
   var h='<div class="card" data-tier="1">'
@@ -1865,7 +1875,6 @@ function renderVerdict(b){
       h+='</div>';
     }
   }
-  h+=qh;
   if(hasV&&v.disclaimer) h+='<div class="note" style="margin-top:12px;opacity:.6;font-size:11px">'+esc(v.disclaimer)+'</div>';
   h+='</div>';
   return h;
@@ -1964,6 +1973,35 @@ function renderExtras(b){
       '<div class="card" data-tier="1"><h2>结论卡渲染失败<span class="tag">请刷新或看 console</span></h2>'
       +'<div class="note">'+esc(String(e&&e.message?e.message:e))+'</div></div>');
   }
+  /* QIS 因子演算：独立成卡（2026-11-12）。
+     与结论卡互不牵连：board 缺 verdict 段时结论卡不产出，但 QIS 读数与
+     「因子退化」告警必须照常显示——否则就是静默失效。 */
+  try{
+    const qh=renderQisBlock(b&&b.qis);
+    if(qh) app.insertAdjacentHTML('afterbegin',
+      '<div class="card" data-tier="1"><h2>QIS 因子演算<span class="tag">'+esc(String((b&&b.qis&&b.qis.asOf)||''))+'</span></h2>'+qh+'</div>');
+  }catch(e){
+    console.error('renderQisBlock 渲染失败：', e);
+    document.title='渲染失败: '+(e&&e.message?e.message:e);
+    app.insertAdjacentHTML('afterbegin',
+      '<div class="card" data-tier="1"><h2>QIS 渲染失败<span class="tag">请刷新或看 console</span></h2>'
+      +'<div class="note">'+esc(String(e&&e.message?e.message:e))+'</div></div>');
+  }
+  /* 降级可见化：board 缺段时明说缺哪段、board 是哪个时点的，
+     而不是什么都不显示（静默失效比报错更严重）。 */
+  try{
+    var miss=[];
+    if(!(b&&b.verdict&&(b.verdict.items||[]).length)) miss.push('结论段 verdict');
+    var qq=b&&b.qis;
+    if(!qq) miss.push('QIS 因子段');
+    else if(!Object.keys(qq.factors||{}).length) miss.push('QIS 因子段（status='+String(qq.status||'无')+'）');
+    if(miss.length){
+      app.insertAdjacentHTML('afterbegin',
+        '<div class="card" data-tier="1"><h2>⚠ 治理数据降级<span class="tag">board '+esc(String((b&&b.generatedAt)||'时点未知'))+'</span></h2>'
+        +'<div class="note" style="color:#ff5c5c">board.json 里没有 '+esc(miss.join('、'))
+        +' ⇒ 对应卡片不显示。多半是取到了旧缓存/兜底副本（源序：raw.githubusercontent → data/board.json），不是页面渲染坏了。请查 S4 推送与页面取数链路。</div></div>');
+    }
+  }catch(e){ console.error('降级说明渲染失败：', e); }
   let x='';
   const n=b.nationalTeam;
   if(n){
@@ -2926,7 +2964,7 @@ if(window.__extrasData){ applyBoardData(window.__extrasData); }
     label:{concl:'结论',why:'为什么',mkt:'市场',mine:'我的',more:'更多'},
     /* 标题前缀 → 分组（长前缀优先，顺序即优先级） */
     map:[
-      ['现在什么情况','concl'],['今日信号卡','concl'],['我的持仓','concl'],
+      ['现在什么情况','concl'],['QIS 因子演算','concl'],['⚠ 治理数据降级','concl'],['结论卡渲染失败','concl'],['QIS 渲染失败','concl'],['今日信号卡','concl'],['我的持仓','concl'],
       ['个人层','concl'],['纪律','concl'],
       ['大盘裁决','why'],['因子分层','why'],['三因子','why'],['F2 ','why'],['F3 ','why'],
       ['盘中观测','why'],['相关层','why'],['数据新鲜度','why'],['已知不可知','why'],

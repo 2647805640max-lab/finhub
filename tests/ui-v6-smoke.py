@@ -617,6 +617,143 @@ class QisDegeneracyBehaviour(unittest.TestCase):
                       "index.html 不再定义 esc ⇒ 页面转义会坏，所有渲染都会出乱码")
 
 
+# ── 2026-11-13：结论卡 / QIS 卡解耦的 fixture ────────────────────────────────────
+# 自己定义场景（不复用 QIS_FIXTURES：那份 fixture 自带 stdout 输出，无法复用）。
+QIS_VERDICT_FIXTURES = r"""
+function qisScene(){
+  return { status:'constrained', asOf:'2026-11-13', nAssets:4,
+    factors:{ '动量':{weight:0.5,value:0.875}, '波动':{weight:0.2,value:0.625}, '偏离':{weight:0.3,value:0.375} },
+    allocation:{deployed:0.15, riskBudget:0.15, maxAssetWeight:0.05},
+    touched:['因子退化·权重对排序无影响'],
+    diagnostics:{
+      effectiveFactorCount:{effective_factor_count:1, unique_rank_vectors:1, participation_ratio:1.0, n_factors:3, n_assets:4},
+      blend:{weights_have_effect:false, rank_identical_to:['momentum','negVol','smaDev'], distinct_orderings:1} },
+    caliber_note:'研究级读数，不是仓位依据' };
+}
+function boardFor(withVerdict){
+  var b={ generatedAt:'2026-11-13 11:00:00', qis:qisScene() };
+  if(withVerdict) b.verdict={ title:'现在什么情况', asOf:'2026-11-07 19:35', summary:'摘要',
+    items:[{level:'bad', headline:'测试条目', body:'正文', numbers:'1', action:'动作'}],
+    todo:[{what:'做点事', why:'因为'}] };
+  return b;
+}
+var mode=process.argv[2];
+if(mode==='with'){
+  var hw=renderVerdict(boardFor(true));
+  process.stdout.write(JSON.stringify({verdict:hw, qis:renderQisBlock(boardFor(true).qis)}));
+} else {
+  var hn=renderVerdict(boardFor(false));
+  process.stdout.write(JSON.stringify({verdict:hn, len:String(hn||'').length}));
+}
+"""
+
+
+
+class QisCardIndependenceBehaviour(unittest.TestCase):
+    """结论卡与 QIS 卡必须互不牵连；数据降级必须看得见（2026-11-13）。
+
+    生产实测（2026-11-12，见 E:\investment-os\_audit\finhub-chain-2026-11-11）：
+    线上页面的 DOM 里「现在什么情况」和「QIS 因子演算」**都不存在**；而同一份字节
+    在本地跑（带探针）时 renderVerdict 返回 7741 字、renderQisBlock 返回 2757 字，
+    告警字样确实在 DOM 里 ⇒ 渲染逻辑没坏，坏在两处：
+      1) **耦合**：QIS 块被内嵌在结论卡里（renderVerdict 末尾 h+=qh），
+         结论卡一旦因为 board 缺 verdict 段而不产出，QIS 读数与「因子退化」告警
+         跟着一起消失；
+      2) **静默**：board 缺段这件事页面上没有任何提示（freshbar 的报错文案被
+         决策横幅覆盖），于是「没显示」看起来像「本来就没有」。
+
+    本组用例钉死修复后的契约，并**两个方向都断言**（不许靠删功能换绿）。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which("node") is None:
+            raise AssertionError("node executable is required to run the inline JS")
+        html = INDEX.read_text(encoding="utf-8")
+        scripts = inline_scripts(html)
+        found = {}
+        for name in ("renderQisBlock", "renderVerdict"):
+            for source in scripts:
+                try:
+                    found[name] = extract_function(source, name)
+                    break
+                except LookupError:
+                    continue
+        for required in ("renderQisBlock", "renderVerdict"):
+            if required not in found:
+                raise AssertionError(
+                    "index.html is missing function %s; cannot test QIS/verdict independence"
+                    % required)
+        cls.found = found
+        cls._tmpdir = tempfile.mkdtemp(prefix="finhub-qis-indep-")
+        cls.harness = Path(cls._tmpdir) / "harness.js"
+        cls.harness.write_text(
+            QIS_ESC_STUB + "\n\n" + found["renderQisBlock"] + "\n\n"
+            + found["renderVerdict"] + "\n\n" + QIS_VERDICT_FIXTURES,
+            encoding="utf-8")
+        check = subprocess.run(["node", "--check", str(cls.harness)],
+                               capture_output=True, text=True, encoding="utf-8")
+        if check.returncode != 0:
+            raise AssertionError("extracted inline JS is not valid JS:\n" + check.stderr)
+
+    def _run(self, mode):
+        proc = subprocess.run(["node", str(self.harness), mode],
+                              capture_output=True, text=True, encoding="utf-8", timeout=60)
+        if proc.returncode != 0:
+            self.fail("node harness failed for mode %r (exit %d):\n%s\n%s"
+                      % (mode, proc.returncode, proc.stdout, proc.stderr))
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            self.fail("harness output for %r is not JSON: %s\n%r" % (mode, exc, proc.stdout))
+
+    def test_verdict_card_no_longer_embeds_the_qis_block(self):
+        """QIS 已独立成卡 ⇒ 结论卡的产物里不该再出现 QIS 的告警字样。"""
+        out = self._run("with")
+        self.assertIn("现在什么情况", out["verdict"], "结论卡本身必须照常产出")
+        self.assertNotIn("本次截面", out["verdict"],
+                         "结论卡里又出现 QIS 告警 ⇒ 两者被重新耦合，"
+                         "board 缺 verdict 段时 QIS 会跟着消失")
+        self.assertNotIn("因子退化", out["verdict"],
+                         "结论卡里又出现退化告警 ⇒ 同上")
+
+    def test_qis_block_still_carries_the_degeneracy_warning(self):
+        """解耦不能等于阉割：QIS 自己的产物必须仍带告警。"""
+        out = self._run("with")
+        for token in ("本次截面", "因子退化", "权重对排序零影响"):
+            self.assertIn(token, out["qis"],
+                          "QIS 卡里必须有 %s（不许用删功能代替解耦）" % token)
+
+    def test_verdict_card_is_absent_when_board_has_no_verdict(self):
+        """board 缺 verdict 段时，结论卡必须**整张不产出**（不留空壳）。"""
+        out = self._run("noverdict")
+        self.assertEqual(out["len"], 0,
+                         "缺 verdict 时 renderVerdict 应返回空串，实际 %r" % out["len"])
+        self.assertEqual(out["verdict"], "", "缺 verdict 时不该产出半张卡")
+
+    def test_degraded_board_is_reported_visibly(self):
+        """静态护栏：降级说明卡必须还在，且写清缺哪段。"""
+        html = INDEX.read_text(encoding="utf-8")
+        for marker in ("治理数据降级", "结论段 verdict", "QIS 因子段", "board.json 里没有"):
+            self.assertIn(marker, html,
+                          "index.html 缺少降级说明 %r ⇒ 数据降级会再次静默" % marker)
+
+    def test_new_cards_are_mapped_to_a_visible_group(self):
+        """静态护栏：新卡片必须落在**可见**分组（concl），不是未映射的「更多」。
+
+        V5.map 没命中的标题会被分到 'more' 组，而该组在计数为 0 时是隐藏的
+        ⇒ 卡片「存在但看不见」＝又一种静默失效。
+        """
+        html = INDEX.read_text(encoding="utf-8")
+        for entry in ("['QIS 因子演算','concl']",
+                      "['⚠ 治理数据降级','concl']",
+                      "['结论卡渲染失败','concl']",
+                      "['QIS 渲染失败','concl']"):
+            self.assertIn(entry, html,
+                          "V5.map 缺少 %s ⇒ 这张卡会被分到隐藏的「更多」组" % entry)
+
+
+
 class ThresholdParityTests(unittest.TestCase):
     """D7（2026-11-08）：页面里的时效阈值必须与 contracts/thresholds.json 一致。
 

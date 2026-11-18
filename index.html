@@ -556,6 +556,7 @@ details.unk .unklist b{color:var(--txt)}
     <!-- 2026-11-05 P0-2：自动化健康（管道跑了多少次 OK/WARN）属于运维信息，
          移到治理页；首屏让位给"已知未执行偏差"这类真风险。 -->
     <div id="autobar" class="freshbar" hidden></div>
+    <div id="patrolbar" class="freshbar" hidden></div><!-- 2026-11-18：本机数据链路异步巡检（data/patrol.json） -->
     <div id="govfreshbar" class="freshbar" hidden></div>
     <header>
       <h1>治理看板 <small id="govVer">—</small></h1>
@@ -1945,6 +1946,32 @@ function renderExtras(b){
       }
     }
   }catch(autoRenderErr){ /* 自动化状态失败不影响主内容 */ }
+  /* ── 巡检状态（本机 patrol.ps1 每 15 分钟异步巡检爬虫/qis/流水线，2026-11-18）──
+     单向只读 data/patrol.json，缺文件=巡检器未部署或停了 → 条隐藏，不制造噪音；
+     但巡检龄过大本身就是信号（巡检器自己死了），进 title 说明。 */
+  try{
+    fetch('./data/patrol.json',{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(p){
+      var pb=document.getElementById('patrolbar');
+      if(!pb) return;
+      if(!p||!Array.isArray(p.tasks)||p.tasks.length===0){ pb.hidden=true; return; }
+      var failTasks=[],warnTasks=[];
+      for(var i=0;i<p.tasks.length;i++){
+        var t=p.tasks[i];
+        if(t.verdict==='fail') failTasks.push(t.name);
+        else if(t.verdict==='warn') warnTasks.push(t.name);
+      }
+      var tone=(p.overall==='fail')?'bad':((p.overall==='warn')?'warn':'ok');
+      var parts=['🛡 巡检 '+(p.overall==='fail'?'⚠ FAIL':(p.overall==='warn'?'△ WARN':'✓ OK'))];
+      if(failTasks.length) parts.push('FAIL:'+failTasks.join('/'));
+      else if(warnTasks.length) parts.push('WARN:'+warnTasks.join('/'));
+      var checkedMs=Date.parse(p.checkedAt||'');
+      if(!isNaN(checkedMs)) parts.push('巡检龄 '+Math.max(0,Math.floor((Date.now()-checkedMs)/60000))+' 分钟');
+      pb.hidden=false;
+      pb.className='freshbar '+tone;
+      pb.textContent=parts.join(' · ');
+      pb.title='本机巡检器每 15 分钟自检爬虫/qis/流水线；巡检龄远超 15 分钟 = 巡检器本身可能停了。任务名释义：runner=8787采集器 pipeline=看板流水线 qis=价量因子 factors=三因子 automation=Harness定时任务 vps=VPS采集';
+    }).catch(function(){ /* 巡检数据不可得不影响主内容 */ });
+  }catch(patrolRenderErr){ /* 同上 */ }
   const bar=document.getElementById('freshbar');
   const f=b._freshness;
   if(bar){

@@ -1,11 +1,11 @@
 {
     "overall":  "warn",
-    "checkedAt":  "2026-11-18T23:05:43+08:00",
+    "checkedAt":  "2026-11-18T23:05:46+08:00",
     "tasks":  [
                   {
                       "name":  "runner",
                       "verdict":  "ok",
-                      "ageMin":  9
+                      "ageMin":  10
                   },
                   {
                       "name":  "pipeline",

@@ -1,6 +1,6 @@
 {
-    "overall":  "warn",
-    "checkedAt":  "2026-11-19T19:06:02+08:00",
+    "overall":  "fail",
+    "checkedAt":  "2026-11-20T19:20:07+08:00",
     "tasks":  [
                   {
                       "name":  "runner",
@@ -10,27 +10,27 @@
                   {
                       "name":  "pipeline",
                       "verdict":  "ok",
-                      "ageMin":  4
+                      "ageMin":  6
                   },
                   {
                       "name":  "qis",
                       "verdict":  "ok",
-                      "ageMin":  4
+                      "ageMin":  18
                   },
                   {
                       "name":  "factors",
                       "verdict":  "ok",
-                      "ageMin":  635
+                      "ageMin":  649
                   },
                   {
                       "name":  "automation",
-                      "verdict":  "warn",
-                      "ageMin":  31
+                      "verdict":  "ok",
+                      "ageMin":  15
                   },
                   {
                       "name":  "vps",
-                      "verdict":  "ok",
-                      "ageMin":  17
+                      "verdict":  "fail",
+                      "ageMin":  null
                   }
               ]
 }
